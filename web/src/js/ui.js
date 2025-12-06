@@ -39,11 +39,25 @@ export function initUI() {
     }
 
     // Search input
-    document.getElementById('search').addEventListener('input', (e) => {
+    const searchInput = document.getElementById('search');
+    const clearBtn = document.getElementById('clear-search');
+
+    searchInput.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             performSearch();
         }, 150);
+    });
+
+    searchInput.addEventListener('input', () => {
+        clearBtn.style.display = searchInput.value ? 'block' : 'none';
+    });
+
+    clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearBtn.style.display = 'none';
+        searchInput.focus();
+        performSearch(); 
     });
 
     document.getElementById('ipa-toggle').addEventListener('click', function () {

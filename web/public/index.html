@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
   <title>SaoLa | a bilingual dictionary for learners of Vietnamese</title>
-  <link rel="stylesheet" href="main.min.css">
+  <link rel="stylesheet" href="main.min.css?v=v2">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flexsearch@0.8.212/dist/flexsearch.bundle.min.js"></script>
@@ -50,6 +50,7 @@
         autocapitalize="off"
         spellcheck="false"
       >
+      <button id="clear-search" aria-label="Clear search">×</button>
     </div>
     
     <div id="results"></div>
@@ -62,6 +63,6 @@
     </div>
   </div>
 
-  <script type="module" src="bundle.js?v=v1"></script>
+  <script type="module" src="bundle.js?v=v2"></script>
 </body>
 </html>

@@ -4,7 +4,8 @@ const { execSync } = require('child_process');
 
 const AUDIO_BASE_URL = 'https://pub-9ec168b9602247ec9a07b5964680de73.r2.dev';
 const AUDIO_VERSION = 'v1';
-const JS_VERSION = 'v1';
+const JS_VERSION = 'v2';
+const CSS_VERSION = 'v2';
 
 // Read your JS files
 const srcDir = path.join(__dirname, 'src');
@@ -77,7 +78,7 @@ let htmlContent = fs.readFileSync(htmlInputPath, 'utf8');
 htmlContent = htmlContent.replace(/src="js\/[^"]*main\.js"/, `src="bundle.js?v=${JS_VERSION}"`);
 
 // Replace CSS reference with minified version
-htmlContent = htmlContent.replace(/href="[^"]*main\.css"/, 'href="main.min.css"');
+htmlContent = htmlContent.replace(/href="[^"]*main\.css"/, `href="main.min.css?v=${CSS_VERSION}"`);
 
 fs.writeFileSync(htmlOutputPath, htmlContent);
 

@@ -95,7 +95,7 @@ export const vnHeadwordTemplate = Handlebars.compile(`
                                         {{#if bold_vi_offsets}}
                                             {{{linkify vi bold_vi_offsets}}}
                                         {{else}}
-                                            {{{vi}}}
+                                            {{{linkify vi}}}
                                         {{/if}}
                                         —
                                         {{#if bold_en_offsets}}

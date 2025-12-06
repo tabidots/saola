@@ -7,11 +7,13 @@ export let enIndex = null;
 export let glossDocIndex = null;
 export let vnHeadwordSet = null;
 
+const DATA_VERSION = 'v2';
+
 export async function initializeData() {
     // Load data
     [vnEn, enVn] = await Promise.all([
-        loadGzipJson('../data/vnen.json.gz'),
-        loadGzipJson('../data/envn.json.gz')
+        loadGzipJson(`../data/vnen.json.gz?v=${DATA_VERSION}`),
+        loadGzipJson(`../data/envn.json.gz?v=${DATA_VERSION}`)
     ]);
 
     // Build Vietnamese index

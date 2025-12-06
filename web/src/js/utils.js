@@ -137,6 +137,7 @@ export function boldify(text, offsets = []) {
 export function linkifySegments(segments) {
     let out = "";
     let inBoldSpan = false;
+    let parensToBalance = 0;
 
     for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
@@ -181,8 +182,13 @@ export function linkifySegments(segments) {
         }
 
         // --- ADD TOKEN ---
-        if (isPunct) {
+        if (parensToBalance === 0 && /^\)/.test(seg.display)) {
+            // Don't add a closing paren if a previous headword crossed over an opening paren
+            // This happened with at least one example (thế giới, second example)
+        } else if (isPunct) {
             out += seg.display;
+            if (/^\)/.test(seg.display)) parensToBalance--;
+            else if (/\($/.test(seg.display)) parensToBalance++;
         } else if (!seg.inDictionary) {
             out += escapeHtml(seg.display);
         } else {
