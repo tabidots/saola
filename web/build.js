@@ -9,24 +9,27 @@ const AUDIO_VERSION = 'v1';
 const srcDir = path.join(__dirname, 'src');
 const publicDir = path.join(__dirname, 'public');
 
-// Read and bundle JS files
-let jsContent = '';
-const jsFiles = ['utils.js', 'data-loader.js', 'search.js', 'templates.js', 'display.js', 'ui.js', 'main.js'];
+// Do the audio URL replacement in ui.js
+const uiJsPath = path.join(srcDir, 'js', 'ui.js');
+let uiJsContent = fs.readFileSync(uiJsPath, 'utf8');
+const originalContent = uiJsContent;
 
-jsFiles.forEach(file => {
-    const content = fs.readFileSync(path.join(srcDir, 'js', file), 'utf8');
-    jsContent += content + '\n';
-});
-
-// Replace the audio path
-jsContent = jsContent.replace(
+uiJsContent = uiJsContent.replace(
     /const audio = new Audio\(`\.\.\/audio\/\${filename}`\);/g,
     `const audio = new Audio(\`${AUDIO_BASE_URL}/\${filename}?v=${AUDIO_VERSION}\`);`
 );
 
-// Write bundled JS
+// Write the modified version temporarily
+fs.writeFileSync(uiJsPath, uiJsContent);
+
+// Bundle and minify JS with esbuild (still use main.js as entry point)
+console.log('Bundling and minifying JavaScript...');
 const bundlePath = path.join(publicDir, 'bundle.js');
-fs.writeFileSync(bundlePath, jsContent);
+execSync(`npx esbuild ${path.join(srcDir, 'js', 'main.js')} --bundle --format=esm --outfile=${bundlePath}`);
+// execSync(`npx esbuild ${path.join(srcDir, 'js', 'main.js')} --bundle --minify --format=esm --outfile=${bundlePath}`);
+
+// Restore original main.js
+fs.writeFileSync(uiJsPath, originalContent);
 
 // Minify JS with terser
 console.log('Minifying JavaScript...');

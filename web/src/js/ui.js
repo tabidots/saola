@@ -155,7 +155,7 @@ function closeModal() {
 export function handleAudioClick(button) {
     const filename = button.dataset.filename;
 
-    const audio = new Audio(`../audio/${filename}`);
+    const audio = new Audio(`https://pub-9ec168b9602247ec9a07b5964680de73.r2.dev/${filename}?v=v1`);
     button.classList.add('playing');
     button.disabled = true;
 

@@ -1,4 +1,4 @@
-import { vnHeadwordTemplate, enHeadwordTemplate } from './templates.js';
+import { vnHeadwordTemplate, enHeadwordTemplate, renderSection } from './templates.js';
 
 let ipaMode = false;
 

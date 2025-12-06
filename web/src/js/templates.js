@@ -1,4 +1,5 @@
-import { segmentVietnamese, linkifyFromList, linkifySegments, boldify } from './utils.js';
+import { linkifyFromList, linkifySegments, boldify } from './utils.js';
+import { segmentVietnamese } from './segmenter.js';
 
 // Register Handlebars helpers
 Handlebars.registerHelper('join', function (array, separator) {
