@@ -62,4 +62,26 @@ htmlContent = htmlContent.replace(/href="[^"]*main\.css"/, 'href="main.min.css"'
 
 fs.writeFileSync(htmlOutputPath, htmlContent);
 
+// At the end of build.js, after the HTML update:
+
+console.log('Copying assets...');
+
+// Copy data folder
+const dataSource = path.join(__dirname, 'data');
+const dataTarget = path.join(publicDir, 'data');
+if (fs.existsSync(dataTarget)) fs.rmSync(dataTarget, { recursive: true });
+fs.cpSync(dataSource, dataTarget, { recursive: true });
+
+// Copy img folder
+const imgSource = path.join(__dirname, 'img');
+const imgTarget = path.join(publicDir, 'img');
+if (fs.existsSync(imgTarget)) fs.rmSync(imgTarget, { recursive: true });
+fs.cpSync(imgSource, imgTarget, { recursive: true });
+
+// Copy md folder
+const mdSource = path.join(__dirname, 'md');
+const mdTarget = path.join(publicDir, 'md');
+if (fs.existsSync(mdTarget)) fs.rmSync(mdTarget, { recursive: true });
+fs.cpSync(mdSource, mdTarget, { recursive: true });
+
 console.log('Build complete!');

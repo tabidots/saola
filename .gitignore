@@ -9,3 +9,6 @@ web/audio/
 web/img/icon-src
 node_modules/
 /package-lock.json
+web/public/data/
+web/public/img/
+web/public/md/
