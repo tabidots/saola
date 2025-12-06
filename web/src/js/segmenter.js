@@ -21,6 +21,7 @@ export function segmentVietnamese(phrase, boldOffsets = []) {
     // EVERYTHING is preserved.
     //
     const rawTokens = phrase.match(/[\p{L}\p{N}-]+|\s+|[^\p{L}\p{N}\s-]+/gu) || [];
+    console.log(rawTokens)
 
     // Convert to internal token objects
     let currentPos = 0;
