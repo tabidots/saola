@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
+  <title>SaoLa | a bilingual dictionary for learners of Vietnamese</title>
+  <link rel="stylesheet" href="main.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flexsearch@0.8.212/dist/flexsearch.bundle.min.js"></script>
+
+  <link rel="icon" href="../img/favicon.svg" type="image/svg+xml">
+
+  <base target="_self">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="a bilingual dictionary for learners of Vietnamese">
+  <meta property="og:title" content="SaoLa">
+  <meta property="og:image" content="/img/saola-og.png">
+  <meta property="og:type" content="website" />
+</head>
+<body>
+  <header>
+    
+    <div class="title-row">
+      <button type="button" id="ipa-toggle">IPA</button>
+      <h1>Sao<span class="ipa"> /saːw˧˧/ </span>La<span class="ipa"> /laː˧˧/</span></h1>
+      <button type="button" id="dark-mode-toggle" title="Toggle dark mode"><span class="icon"></span></button>
+    </div>
+    <p>a bilingual dictionary for learners of Vietnamese</p>
+    <div>
+      <a href="#" id="help-button">help</a>
+      <a href="#" id="about-button">about</a>
+    </div>
+  </header>
+
+  <main>
+    <div id="loading" class="loading">Loading dictionary...</div>
+    <div class="search-container">
+      <input 
+        type="text" 
+        id="search" 
+        placeholder="Look up word / Tìm kiếm từ"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
+    </div>
+    
+    <div id="results"></div>
+  </main>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
