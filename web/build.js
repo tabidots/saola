@@ -9,44 +9,63 @@ const JS_VERSION = 'v1';
 // Read your JS files
 const srcDir = path.join(__dirname, 'src');
 const publicDir = path.join(__dirname, 'public');
+const tempDir = path.join(__dirname, '__temp_build__');
 
-// ------------------------------
-// Load ui.js and inject audio URLs in-memory
-// ------------------------------
-const uiJsPath = path.join(srcDir, 'js', 'ui.js');
-let uiJsContent = fs.readFileSync(uiJsPath, 'utf8');
+console.log('Creating temporary build directory...');
 
-// Replace only inside the loaded string
-uiJsContent = uiJsContent.replace(
-    /const audio = new Audio\(`\.\.\/audio\/\${filename}`\);/g,
-    `const audio = new Audio(\`${AUDIO_BASE_URL}/\${filename}?v=${AUDIO_VERSION}\`);`
-);
+// Copy entire src to temp
+if (fs.existsSync(tempDir)) {
+    fs.rmSync(tempDir, { recursive: true });
+}
+fs.cpSync(srcDir, tempDir, { recursive: true });
 
-// TEMP memory file path for esbuild stdin
-const patchedUiPath = path.join(srcDir, 'js', '__ui_patched__.js');
-fs.writeFileSync(patchedUiPath, uiJsContent);
+// Patch all JS files in temp
+console.log('Patching paths...');
+const jsDir = path.join(tempDir, 'js');
+const jsFiles = fs.readdirSync(jsDir).filter(f => f.endsWith('.js'));
 
-// Bundle and minify JS with esbuild (still use main.js as entry point)
+jsFiles.forEach(file => {
+    const filePath = path.join(jsDir, file);
+    let content = fs.readFileSync(filePath, 'utf8');
+
+    // Replace audio URLs
+    content = content.replace(
+        /const audio = new Audio\(`\.\.\/audio\/\${filename}`\);/g,
+        `const audio = new Audio(\`${AUDIO_BASE_URL}/\${filename}?v=${AUDIO_VERSION}\`);`
+    );
+
+    content = content.replace(/(['"`])\.\.\/data\//g, '$1./data/');
+    content = content.replace(/(['"`])\.\.\/md\//g, '$1./md/');
+
+    fs.writeFileSync(filePath, content);
+});
+
+// Patch CSS
+console.log('Patching CSS...');
+const cssPath = path.join(tempDir, 'main.css');
+let cssContent = fs.readFileSync(cssPath, 'utf8');
+
+// Replace ../img/ with ./img/
+cssContent = cssContent.replace(/url\((['"])?\.\.\/img\//g, 'url($1./img/');
+
+fs.writeFileSync(cssPath, cssContent);
+
+// Bundle and minify JS from temp
 console.log('Bundling and minifying JavaScript...');
 const bundlePath = path.join(publicDir, 'bundle.js');
 execSync(
-    `npx esbuild ${path.join(srcDir, 'js', 'main.js')} \
+    `npx esbuild ${path.join(tempDir, 'js', 'main.js')} \
         --bundle \
         --minify \
         --format=esm \
-        --outfile=${bundlePath} \
-        --inject:${patchedUiPath}`,
+        --outfile=${bundlePath}`,
     { stdio: 'inherit' }
 );
 
-// Remove temporary patched file
-fs.unlinkSync(patchedUiPath);
-
 // Minify CSS
 console.log('Minifying CSS...');
-const cssInput = path.join(srcDir, 'main.css');
 const cssOutput = path.join(publicDir, 'main.min.css');
-execSync(`npx cleancss -o ${cssOutput} ${cssInput}`);
+execSync(`npx cleancss -o ${cssOutput} ${cssPath}`);
 
 // Update HTML to reference bundle.js
 console.log('Updating HTML...');
@@ -83,5 +102,9 @@ const mdSource = path.join(__dirname, 'md');
 const mdTarget = path.join(publicDir, 'md');
 if (fs.existsSync(mdTarget)) fs.rmSync(mdTarget, { recursive: true });
 fs.cpSync(mdSource, mdTarget, { recursive: true });
+
+// Clean up temp
+console.log('Cleaning up...');
+fs.rmSync(tempDir, { recursive: true });
 
 console.log('Build complete!');
