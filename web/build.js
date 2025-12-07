@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 
 const AUDIO_BASE_URL = 'https://pub-9ec168b9602247ec9a07b5964680de73.r2.dev';
 const AUDIO_VERSION = 'v1';
-const JS_VERSION = 'v2';
+const JS_VERSION = 'v3';
 const CSS_VERSION = 'v2';
 
 // Read your JS files
@@ -31,8 +31,8 @@ jsFiles.forEach(file => {
 
     // Replace audio URLs
     content = content.replace(
-        /const audio = new Audio\(`\.\.\/audio\/\${filename}`\);/g,
-        `const audio = new Audio(\`${AUDIO_BASE_URL}/\${filename}?v=${AUDIO_VERSION}\`);`
+        /`\.\.\/audio\/\${filename}`/g,
+        `\`${AUDIO_BASE_URL}/\${filename}?v=${AUDIO_VERSION}\``
     );
 
     content = content.replace(/(['"`])\.\.\/data\//g, '$1./data/');
