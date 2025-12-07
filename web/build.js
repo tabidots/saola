@@ -76,9 +76,10 @@ let htmlContent = fs.readFileSync(htmlInputPath, 'utf8');
 
 // Replace main.js reference with bundle.js
 htmlContent = htmlContent.replace(/src="js\/[^"]*main\.js"/, `src="bundle.js?v=${JS_VERSION}"`);
-
 // Replace CSS reference with minified version
 htmlContent = htmlContent.replace(/href="[^"]*main\.css"/, `href="main.min.css?v=${CSS_VERSION}"`);
+// Replace ../img/ with ./img/
+htmlContent = htmlContent.replace(/(['"])\.\.\/img\//g, '$1./img/');
 
 fs.writeFileSync(htmlOutputPath, htmlContent);
 
