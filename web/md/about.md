@@ -1,6 +1,6 @@
 ## About SaoLa
 
-**SaoLa** is a Vietnamese-English dictionary designed specifically for learners of Vietnamese. In addition to helping learners expand your vocabulary, it is also intended to improve pronunciation and the ability to recognize words in speech—the foundational elements of conversational fluency.
+**SaoLa** is a Vietnamese-English dictionary designed specifically for learners of Vietnamese. In addition to helping you expand your vocabulary, it is also intended to improve pronunciation and the ability to recognize words in speech—the foundational elements of conversational fluency.
 
 ### Features
 
