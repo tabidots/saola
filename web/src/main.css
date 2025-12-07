@@ -258,8 +258,10 @@ input::placeholder {
     border-top: 1px solid var(--soft-bg);
 }
 
-.result:hover {
-    background: var(--soft-bg);
+@media (pointer: fine) {
+    .result:hover {
+        background: var(--soft-bg);
+    }
 }
 
 .headword-row {

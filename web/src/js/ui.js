@@ -3,6 +3,12 @@ import { displayResults, setIpaMode, getIpaMode } from './display.js';
 
 let searchTimeout;
 
+function isMobile() {
+    const userAgentCheck = /Mobi|Android/i.test(navigator.userAgent);
+    const widthCheck = window.innerWidth <= 768;
+    return userAgentCheck || widthCheck;
+}
+
 function setDarkMode(isDark) {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
 }
@@ -87,12 +93,14 @@ export function initUI() {
             return; // Exit early
         }
 
-        const audiobutton = e.target.closest('.audio-button');
-        if (audiobutton) {
-            console.log('Audio button clicked');
-            e.preventDefault(); // Optional for buttons
-            handleAudioClick(audiobutton); // Async function, not awaited
-            return;
+        if (!isMobile()) {
+            const audiobutton = e.target.closest('.audio-button');
+            if (audiobutton) {
+                console.log('Audio button clicked');
+                e.preventDefault();
+                handleAudioClick(audiobutton);
+                return;
+            }
         }
 
         const header = e.target.closest('.section-title.collapsible');
@@ -107,6 +115,13 @@ export function initUI() {
         }
 
     });
+
+    if (isMobile()) {
+        document.addEventListener('touchstart', (e) => {
+            const audiobutton = e.target.closest('.audio-button');
+            if (audiobutton) handleAudioClick(audiobutton);
+        });
+    }
 
     // Modal handlers
     setupModalHandlers();
@@ -166,26 +181,42 @@ function closeModal() {
     document.body.style.overflow = '';
 }
 
+let audio = new Audio();
+let currentAudioButton = null;  // Track button to avoid "sticky" button issue when playing overlapping audio
+
 export function handleAudioClick(button) {
     const filename = button.dataset.filename;
 
-    const audio = new Audio(`https://pub-9ec168b9602247ec9a07b5964680de73.r2.dev/${filename}?v=v1`);
+    // Clean up previous button if exists
+    if (currentAudioButton) {
+        currentAudioButton.classList.remove('playing');
+        currentAudioButton.disabled = false;
+    }
+
+    // Eliminate iOS audio lag by reusing the same Audio object
+    // https://stackoverflow.com/a/54432573
+    audio.src = `../audio/${filename}`;
+    currentAudioButton = button;
+
     button.classList.add('playing');
     button.disabled = true;
 
     audio.onended = () => {
         button.classList.remove('playing');
         button.disabled = false;
+        currentAudioButton = null; 
     };
 
     audio.onerror = () => {
         console.error('Audio error:', filename);
         button.innerHTML = '❌';
+        currentAudioButton = null; 
     };
 
     // Play
     audio.play().catch(error => {
         console.error('Play failed:', error);
         button.innerHTML = '❌';
+        currentAudioButton = null; 
     });
 }
