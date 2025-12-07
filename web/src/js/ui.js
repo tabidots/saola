@@ -183,10 +183,14 @@ function closeModal() {
 
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const audioBufferCache = new Map();
-const MAX_CACHE_SIZE = 20;
+const audioBlobCache = new Map();
+
+// Detect iOS
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 let currentButton = null;
 let currentSource = null;
+let audio = new Audio(); // For iOS fallback
 
 async function getAudioBuffer(filename) {
     if (audioBufferCache.has(filename)) {
@@ -197,30 +201,30 @@ async function getAudioBuffer(filename) {
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-    // Manage cache size
-    if (audioBufferCache.size >= MAX_CACHE_SIZE) {
-        const firstKey = audioBufferCache.keys().next().value;
-        audioBufferCache.delete(firstKey);
-    }
-
     audioBufferCache.set(filename, audioBuffer);
     return audioBuffer;
+}
+
+async function getAudioBlobUrl(filename) {
+    if (audioBlobCache.has(filename)) {
+        return audioBlobCache.get(filename);
+    }
+
+    const response = await fetch(`../audio/${filename}`);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    audioBlobCache.set(filename, blobUrl);
+    return blobUrl;
 }
 
 export async function handleAudioClick(button) {
     const filename = button.dataset.filename;
 
-    // Clean up previous button and stop current audio
+    // Clean up previous button
     if (currentButton) {
         currentButton.classList.remove('playing');
         currentButton.disabled = false;
-    }
-    if (currentSource) {
-        try {
-            currentSource.stop();
-        } catch (e) {
-            // Already stopped, ignore
-        }
     }
 
     button.classList.add('playing');
@@ -228,30 +232,57 @@ export async function handleAudioClick(button) {
     currentButton = button;
 
     try {
-        // Resume context if suspended (Safari requirement)
-        if (audioContext.state === 'suspended') {
-            await audioContext.resume();
+        if (isIOS) {
+            // iOS: Use <audio> element (respects ringer volume, not silent mode)
+            const blobUrl = await getAudioBlobUrl(filename);
+            audio.src = blobUrl;
+
+            audio.onended = () => {
+                button.classList.remove('playing');
+                button.disabled = false;
+                currentButton = null;
+            };
+
+            audio.onerror = () => {
+                console.error('Audio error:', filename);
+                button.innerHTML = '❌';
+                button.disabled = false;
+                currentButton = null;
+            };
+
+            await audio.play();
+        } else {
+            // Desktop: Use Web Audio API (zero latency)
+            if (currentSource) {
+                try {
+                    currentSource.stop();
+                } catch (e) { }
+            }
+
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+
+            const audioBuffer = await getAudioBuffer(filename);
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioContext.destination);
+
+            currentSource = source;
+
+            source.onended = () => {
+                button.classList.remove('playing');
+                button.disabled = false;
+                currentButton = null;
+                currentSource = null;
+            };
+
+            source.start(0);
         }
-
-        const audioBuffer = await getAudioBuffer(filename);
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
-
-        currentSource = source;
-
-        source.onended = () => {
-            button.classList.remove('playing');
-            button.disabled = false;
-            currentButton = null;
-            currentSource = null;
-        };
-
-        source.start(0);
     } catch (error) {
         console.error('Audio error:', error);
         button.innerHTML = '❌';
+        button.disabled = false;
         currentButton = null;
-        currentSource = null;
     }
 }
