@@ -201,7 +201,6 @@ export function searchEnglishGlosses(query) {
 
     const results = glossDocIndex.search(lowercase, {
         limit: 100,
-        field: "gloss",
         enrich: true,
         suggest: true
     });
@@ -295,16 +294,13 @@ function findBestMatchingGloss(word, query) {
         if (!lexeme.senses) return;
 
         lexeme.senses.forEach(sense => {
-            if (!sense.glosses) return;
+            const gloss = sense.gloss;
+            const score = scoreGlossMatch(gloss, query);
 
-            sense.glosses.forEach(gloss => {
-                const score = scoreGlossMatch(gloss, query);
-
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMatch = gloss;
-                }
-            });
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = gloss;
+            }
         });
     });
 

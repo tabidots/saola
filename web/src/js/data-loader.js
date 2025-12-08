@@ -87,6 +87,7 @@ export async function initializeData() {
             });
         }
     });
+    console.log(vnEn[2000])
 
     // Build Vietnamese headword set for segmentation
     vnHeadwordSet = new Set();
