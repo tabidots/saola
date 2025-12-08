@@ -14,7 +14,24 @@
 
 Dictionary data is sourced from [English Wiktionary](https://en.wiktionary.org) via [Kaikki.org](https://kaikki.org).
 
-Frequncy data is based on the 1M sentence mixed-source corpus from [Leipzig Wortschatz](https://wortschatz.uni-leipzig.de/en/download/).
+The word frequency data in this dictionary is derived from two corpora:
+
+#### Leipzig Wortschatz Mixed Corpus (1M sentences)
+
+Provided by the University of Leipzig.
+Source: [Leipzig Wortschatz](https://wortschatz.uni-leipzig.de/en/download/)
+
+#### OpenSubtitles Dataset (English–Vietnamese)
+
+Original dataset described in:
+
+P. Lison & J. Tiedemann (2016). *OpenSubtitles2016: Extracting Large Parallel Corpora from Movie and TV Subtitles.* Proceedings of LREC 2016.
+
+Accessed through the processed release maintained at [this GitHub repo](https://github.com/sinhngn/English-Vietnamese-parallel-corpus-context).
+
+The underlying data originates from the OpenSubtitles collection and is redistributed according to the project’s licensing terms.
+
+### Audio
 
 The current audio files were generated using [Viettel AI](http://viettelai.vn)'s text-to-speech service. Better audio and greater word coverage coming soon!
 
