@@ -12,7 +12,9 @@ Typing ambiguous words like “the” and “may” will bring up results in bot
 
 To help you master one or both of the major varieties of Vietnamese, SaoLa includes phonetic respellings and IPA. The respellings require a basic grasp of the spelling-to-sound correspondence in Northern Vietnamese. They illustrate the pronunciation using only the letters in the Vietnamese alphabet (plus w, y, and z) and, for the most part, their Northern pronunciation.
 
-They are based on the information in [this blog post](https://nguyentienhai.blogspot.com/2016/12/giong-mien-nao-gan-voi-giong-chuan-quoc.html) (in Vietnamese), though SaoLa’s respellings are further adapted for learners. This sometimes results in some unconventional letter combinations. Some subtleties were omitted to keep the respellings easy-to-read. In the following notes, `this` means Vietnamese spelling, @/this/@ means IPA, and *this* means phonetic respelling.
+They are based on the information in [this blog post](https://nguyentienhai.blogspot.com/2016/12/giong-mien-nao-gan-voi-giong-chuan-quoc.html) (in Vietnamese), though SaoLa’s respellings are further adapted for learners. This sometimes results in some unconventional letter combinations. Some subtleties were omitted to keep the respellings easy-to-read.
+
+In the following notes, `this` means Vietnamese spelling, @/this/@ means IPA, and *this* means phonetic respelling.
 
 - *x*, *s*, *tr*, *ch* denote their Southern pronunciation; in the North only the sounds corresponding to *x* @/s/@ and *tr* @/t͡ɕ/@ are used
 - The long vowel `a` is often somewhere between @/a~æ/@ in the South; `ǎ` remains the same pure short vowel
@@ -26,3 +28,25 @@ They are based on the information in [this blog post](https://nguyentienhai.blog
   - thuộc, thuật, thúc = *thuục, thục, thúcp*
   - chuẩn, chuồn, chuông, chùm, chung = *chủng, chuùng, chuung, chùm, chungm*
   - xuân, xuống, súng = *xung, xuúng, súngm*
+
+### A note on spelling
+
+This dictionary follows modern Vietnamese orthographic conventions, with two clarifications.
+
+#### 1. Tone mark placement
+
+Tone marks follow the official “quy tắc đặt dấu thanh” (1956, reaffirmed in the **Quy định chính tả 1984**), and are placed on the main vowel of a vowel cluster.
+
+Examples: *hoà*, *khỏe*, *thuỷ*.
+
+However, searching for *thủy* will still return results.
+
+#### 2. i / y alternations
+
+In 1984, the “Quy định chính tả tiếng Việt” recommended replacing *y* with *i* in many native and Sino-Vietnamese words (e.g., lí do, mĩ thuật).
+
+However, this change has not been consistently adopted in actual usage.
+
+Therefore, this dictionary treats the more commonly used spelling as the main form, and lists the 1984 forms as alternates.
+
+Common exceptions retained as standard include *bánh mì*, *cà ri*, and *si* (any tone). However, as with the tone mark placement, using *i* instead of *y* will still bring up results.
