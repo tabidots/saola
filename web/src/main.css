@@ -68,6 +68,7 @@ header > * {
 }
 
 .title-row .ipa {
+    display: none;
     align-self: flex-start;
 }
 

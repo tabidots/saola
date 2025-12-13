@@ -1,3 +1,18 @@
+const toneCorrections = {
+    'óa': 'oá', 'òa': 'oà', 'ỏa': 'oả', 'õa': 'oã', 'ọa': 'oạ',
+    'óe': 'oé', 'òe': 'oè', 'ỏe': 'oẻ', 'õe': 'oẽ', 'ọe': 'oẹ',
+    'úy': 'uý', 'ùy': 'uỳ', 'ủy': 'uỷ', 'ũy': 'uỹ', 'ụy': 'uỵ',
+    'Óa': 'Oá', 'Òa': 'Oà', 'Ỏa': 'Oả', 'Õa': 'Oã', 'Ọa': 'Oạ',
+    'Óe': 'Oé', 'Òe': 'Oè', 'Ỏe': 'Oẻ', 'Õe': 'Oẽ', 'Ọe': 'Oẹ',
+    'Úy': 'Uý', 'Ùy': 'Uỳ', 'Ủy': 'Uỷ', 'Ũy': 'Uỹ', 'Ụy': 'Uỵ'
+};
+
+export function fixTonePlacement(text) {
+    // Tone placement fixes
+    const pattern = /([óòỏõọÓÒỎÕỌ][ae]|[úùủũụÚÙỦŨỤ]y)\b/g;
+    return text.replace(pattern, match => toneCorrections[match] || match);
+}
+
 export function removeTones(text) {
     const toneMarks = {
         '\u0300': '', '\u0301': '', '\u0309': '', '\u0303': '', '\u0323': ''

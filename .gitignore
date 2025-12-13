@@ -5,6 +5,8 @@
 todo.md
 devops.md
 /dict/
+extension/dist
+extension/src/js/handlebars.min.js
 web/audio/
 web/img/icon-src
 web/img/*.xcf

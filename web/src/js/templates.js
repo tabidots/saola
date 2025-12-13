@@ -103,8 +103,6 @@ export const vnHeadwordTemplate = Handlebars.compile(`
                                         {{else}}
                                             {{{en}}}
                                         {{/if}}
-                                        {{#if literal}}<span class="literal"> (lit: {{literal}})</span>{{/if}}
-                                        {{#if note}}<span class="note"> ({{note}})</span>{{/if}}
                                     </li>
                                 {{/each}}
                             </ul>
@@ -152,17 +150,6 @@ const frequencyFilter = `
 `
 
 export function renderSection(title, content, defaultOpen = true) {
-    // return `
-    //     <div class="search-section">
-    //         <div class="section-title">
-    //             <h3>${title}</h3>
-    //         </div>
-    //         ${content}
-    //     </div>
-    // `;
-
-    // <span class="result-count">${content.match(/class="result"/g)?.length || 0} results</span>
-
     const sectionId = title.toLowerCase().replace(/\s+/g, '-');
     return `
         <div class="search-section ${defaultOpen ? 'open' : ''}" data-section="${sectionId}">

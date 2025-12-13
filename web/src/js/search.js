@@ -1,4 +1,4 @@
-import { removeTones, makePlain } from './utils.js';
+import { removeTones, makePlain, fixTonePlacement } from './utils.js';
 import { getData } from './data-loader.js';
 
 function isCanonicalMatch(idx, matched, vnEn) {
@@ -9,7 +9,7 @@ export function searchVietnameseHeadwords(query) {
     const { vnEn, vnIndex } = getData();
     if (!vnIndex) return [];
 
-    const lowercase = query.trim().toLowerCase();
+    const lowercase = fixTonePlacement(query.trim().toLowerCase());
     const toneless = removeTones(lowercase);
     const plain = makePlain(lowercase);
 
@@ -335,9 +335,11 @@ export function search(query) {
     // Check if we have any results
     const hasResults = results.vnHeadwords.length > 0 ||
         results.enHeadwords.length > 0
-        
+    
     // Supplement English results with reverse search, but only if there are no exact matches
-    const hasExactEnglishResult = results.enHeadwords.some(entry => entry.lowercase === query);
+    const hasExactEnglishResult = results.enHeadwords.some(entry => 
+        entry.lowercase === query.toLowerCase().trim()
+    );
     const onlyAscii = /^[a-zA-Z ]+$/.test(query);
     if (onlyAscii && !hasExactEnglishResult) {
         results.enGlosses = searchEnglishGlosses(query);

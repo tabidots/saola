@@ -7,7 +7,7 @@ export let enIndex = null;
 export let glossDocIndex = null;
 export let vnHeadwordSet = null;
 
-const DATA_VERSION = 'v5';
+const DATA_VERSION = 'v6';
 
 export async function initializeData() {
     // Load data
@@ -35,7 +35,7 @@ export async function initializeData() {
         }
     });
 
-    console.log(`Vietnamese index: ${vnIndex.size} unique terms`);
+    console.log(`Vietnamese index is ready: ${vnIndex.size} searchable terms for ${vnEn.length} entries`);
 
     // Build English index
     enIndex = new Map();
@@ -47,7 +47,7 @@ export async function initializeData() {
         enIndex.get(term).push(idx);
     });
 
-    console.log(`English index: ${enIndex.size} unique terms`);
+    console.log(`English index is ready: ${enIndex.size} searchable terms for ${enVn.length} lexemes`);
 
     // Build glosses index (FlexSearch)
     glossDocIndex = new FlexSearch.Document({
@@ -87,7 +87,6 @@ export async function initializeData() {
             });
         }
     });
-    console.log(vnEn[2000])
 
     // Build Vietnamese headword set for segmentation
     vnHeadwordSet = new Set();
