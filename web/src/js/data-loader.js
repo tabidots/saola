@@ -7,7 +7,7 @@ export let enIndex = null;
 export let glossDocIndex = null;
 export let vnHeadwordSet = null;
 
-const DATA_VERSION = 'v6';
+const DATA_VERSION = 'v7';
 
 export async function initializeData() {
     // Load data
