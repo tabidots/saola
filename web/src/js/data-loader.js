@@ -1,4 +1,4 @@
-import { loadGzipJson } from './utils.js';
+import { loadGzipJson } from '../../../shared/utils.js';
 
 export let vnEn = [];
 export let enVn = [];

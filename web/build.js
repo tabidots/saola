@@ -20,6 +20,14 @@ if (fs.existsSync(tempDir)) {
 }
 fs.cpSync(srcDir, tempDir, { recursive: true });
 
+// **NEW: Copy shared folder to temp as well**
+const sharedSourceDir = path.join(__dirname, '..', 'shared');
+const sharedTempDir = path.join(tempDir, 'shared');
+if (fs.existsSync(sharedSourceDir)) {
+    fs.mkdirSync(sharedTempDir, { recursive: true });
+    fs.cpSync(sharedSourceDir, sharedTempDir, { recursive: true });
+}
+
 // Patch all JS files in temp
 console.log('Patching paths...');
 const jsDir = path.join(tempDir, 'js');
@@ -37,6 +45,12 @@ jsFiles.forEach(file => {
 
     content = content.replace(/(['"`])\.\.\/data\//g, '$1./data/');
     content = content.replace(/(['"`])\.\.\/md\//g, '$1./md/');
+
+    // **NEW: Patch shared imports to use the copied version**
+    content = content.replace(
+        /from ['"]\.\.\/\.\.\/\.\.\/shared\//g,
+        "from '../shared/"
+    );
 
     fs.writeFileSync(filePath, content);
 });

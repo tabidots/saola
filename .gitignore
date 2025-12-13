@@ -5,8 +5,10 @@
 todo.md
 devops.md
 /dict/
-extension/dist
-extension/src/js/handlebars.min.js
+extension/handlebars.runtime-25c696b.js
+extension/img/
+extension/data/
+shared/handlebars.min.js
 web/audio/
 web/img/icon-src
 web/img/*.xcf

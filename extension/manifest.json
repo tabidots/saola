@@ -1,0 +1,52 @@
+{
+    "manifest_version": 3,
+    "name": "SaoLa Popup Dictionary",
+    "version": "1.0.0",
+    "author": "Justin Douglas",
+    "description": "Vietnamese-English popup dictionary",
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "handlebars.runtime-25c696b.js",
+                "popup.precompiled.js",
+                "bundle.js"
+            ],
+            "css": [
+                "saola-extension.css"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "data/vnen.json.gz",
+                "img/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "permissions": [
+        "storage",
+        "activeTab",
+        "commands",
+        "notifications"
+    ],
+    "commands": {
+        "toggle-saola": {
+            "suggested_key": {
+                "default": "Alt+A",
+                "mac": "Alt+A"
+            },
+            "description": "Toggle Saola on/off"
+        }
+    }
+}

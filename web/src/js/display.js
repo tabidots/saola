@@ -1,4 +1,4 @@
-import { vnHeadwordTemplate, enHeadwordTemplate, renderSection } from './templates.js';
+import { renderSection } from '../../../shared/templates.js';
 
 let ipaMode = false;
 
@@ -20,7 +20,7 @@ export function renderVietnameseHeadwords(results) {
     if (results.length === 0) {
         return '<div class="no-results">No Vietnamese results</div>';
     }
-    
+    const { vnHeadwordTemplate } = window.saolaTemplates;
     return results.map(word => vnHeadwordTemplate(word)).join('');
 }
 
@@ -28,6 +28,7 @@ export function renderEnglishHeadwords(results) {
     if (results.length === 0) {
         return '<div class="no-results">No English results</div>';
     }
+    const { enHeadwordTemplate } = window.saolaTemplates;
     return results.map(entry => enHeadwordTemplate(entry)).join('');
 }
 

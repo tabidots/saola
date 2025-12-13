@@ -339,17 +339,6 @@ li.tag {
     margin: 4px 0 8px;
 }
 
-.literal {
-    color: #666;
-    font-style: italic;
-    font-size: 0.9em;
-}
-
-.note {
-    color: #888;
-    font-size: 0.85em;
-}
-
 .examples {
     margin-top: 5px;
     padding-left: 20px;

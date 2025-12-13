@@ -1,4 +1,4 @@
-import { removeTones, makePlain, fixTonePlacement } from './utils.js';
+import { removeTones, makePlain, fixTonePlacement } from '../../../shared/utils.js';
 import { getData } from './data-loader.js';
 
 function isCanonicalMatch(idx, matched, vnEn) {

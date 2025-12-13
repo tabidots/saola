@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node web/build.js"
+    "build": "node web/build.js",
+    "build-ext": "node extension/build.js"
   },
   "keywords": [],
   "author": "",

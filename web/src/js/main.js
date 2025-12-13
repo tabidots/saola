@@ -1,4 +1,6 @@
 import { initializeData } from './data-loader.js';
+import { registerHandlebarsHelpers, compileTemplates } from '../../../shared/templates.js';
+import { segmentVietnamese } from './segmenter.js';
 import { initUI } from './ui.js';
 
 async function init() {
@@ -9,11 +11,13 @@ async function init() {
 
     try {
         await initializeData();
-
+        
         loadingDiv.style.display = 'none';
         searchContainer.classList.add('ready');
         document.getElementById('search').focus();
-
+        registerHandlebarsHelpers(segmentVietnamese);
+        const templates = compileTemplates();
+        window.saolaTemplates = templates;
         initUI();
 
     } catch (error) {
