@@ -3,19 +3,13 @@ import { registerHandlebarsHelpers } from '../shared/templates.js';
 import { WordTracker } from './word-tracker.js';
 import { PopupManager } from './popup-manager.js';
 import { DictionaryLookup } from './dictionary-lookup.js';
+import { SettingsManager } from './settings.js';
 
 async function init() {
     try {
+        const settingsManager = new SettingsManager();
+        await settingsManager.load();
 
-        document.documentElement.style.setProperty(
-            '--icon-speaker',
-            `url("${chrome.runtime.getURL('img/1f508.svg')}")`
-        );
-        document.documentElement.style.setProperty(
-            '--icon-speaker-playing',
-            `url("${chrome.runtime.getURL('img/1f50a.svg')}")`
-        );
-        
         // Create popup element
         const popup = document.createElement('div');
         popup.id = 'saola-popup';
@@ -32,10 +26,21 @@ async function init() {
         
         // Listen for toggle command from background
         chrome.runtime.onMessage.addListener((message) => {
-            if (message.action === 'toggle') {
-                wordTracker.toggle();
-                console.log("on!")
+            if (message.action === 'setEnabled') {
+                if (message.enabled) {
+                    wordTracker.enable();
+                } else {
+                    wordTracker.disable();
+                }
+                console.log('Extension', message.enabled ? 'enabled' : 'disabled');
             }
+        });
+
+        // Listen for settings changes
+        settingsManager.onChanged((newSettings) => {
+            console.log('Settings updated:', newSettings);
+            // Refresh popup if it's currently showing
+            popupManager.refresh();
         });
 
     } catch (error) {

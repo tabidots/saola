@@ -23,6 +23,23 @@
             "run_at": "document_idle"
         }
     ],
+    "icons": {
+        "16": "img/icon-16.png",
+        "48": "img/icon-48.png",
+        "128": "img/icon-128.png"
+    },
+    "action": {
+        "default_icon": {
+            "16": "img/icon-16.png",
+            "48": "img/icon-48.png",
+            "128": "img/icon-128.png"
+        },
+        "default_title": "SaoLa Popup Dictionary (click to toggle)"
+    },
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": false
+    },
     "web_accessible_resources": [
         {
             "resources": [
@@ -46,7 +63,7 @@
                 "default": "Alt+A",
                 "mac": "Alt+A"
             },
-            "description": "Toggle Saola on/off"
+            "description": "Toggle SaoLa on/off"
         }
     }
 }

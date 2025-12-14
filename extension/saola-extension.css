@@ -1,4 +1,4 @@
-:root {
+#saola-popup {
     --saola-background-color: #FFF;
     --saola-text-color: #333;
     --saola-soft-text-color: #666;
@@ -12,9 +12,35 @@
     --saola-modal-bg: #FFF;
     --saola-modal-overlay: rgba(0, 0, 0, 0.5);
     --saola-code-bg: #F5F5F5;
+    position: fixed;
+    top: 0;
+    left: 0;
+    max-width: 400px;
+    margin: 20px 0 0 20px;
+    padding: 20px;
+    display: none;
+    line-height: 1.4;
+    flex-direction: column;
+    gap: 20px;
+    background: white;
+    border-radius: 10px;
+    z-index: 10001;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--saola-background-color);
+    color: var(--saola-text-color);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+
+    h1, h2, h3, h4, p {
+        margin-bottom: 5px;
+    }
+    h1 {
+        font-weight: 800;
+        display: inline-flex;
+        gap: 5px;
+    }
 }
 
-[data-theme="dark"] {
+[data-theme="dark"] #saola-popup {
     --saola-background-color: #13171F;
     --saola-text-color: #e0e0e0;
     --saola-soft-text-color: #ccc;
@@ -28,34 +54,7 @@
     --saola-modal-bg: #1C212D;           /* Dark blue-gray, lighter than background */
     --saola-modal-overlay: rgba(12, 15, 23, 0.9);  /* Dark blue overlay */
     --saola-code-bg: #2d2d2d;            /* Dark code blocks */
-}
-
-#saola-popup {
-    position: fixed;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    top: 0;
-    left: 0;
-    max-width: 400px;
-    margin: 20px 0 0 20px;
-    padding: 20px;
-    display: none;
-    line-height: 1.4;
-    flex-direction: column;
-    gap: 20px;
-    background: white;
-    z-index: 10001;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: var(--saola-background-color);
-    color: var(--saola-text-color);
-
-    h1, h2, h3, h4, p {
-        margin-bottom: 5px;
-    }
-    h1 {
-        font-weight: 800;
-        display: inline-flex;
-        gap: 5px;
-    }
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .saola-popup-result {
@@ -207,7 +206,7 @@
     */
 
     button.audio-button .audio-icon:before {
-        content: var(--icon-speaker);
+        content: url('chrome-extension://__MSG_@@extension_id__/img/1f508.svg');
         display: inline-block;
         height: 1em;
         width: 1em;
@@ -224,6 +223,6 @@
     }
 
     button.audio-button.playing .audio-icon:before {
-        content: var(--icon-speaker-playing);
+        content: url('chrome-extension://__MSG_@@extension_id__/img/1f50a.svg');
     }
 }

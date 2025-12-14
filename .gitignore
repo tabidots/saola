@@ -4,13 +4,14 @@
 .DS_Store
 todo.md
 devops.md
+make_icons.sh
 /dict/
+/icon-src/
 extension/handlebars.runtime-25c696b.js
 extension/img/
 extension/data/
-shared/handlebars.min.js
+shared/*.min.js
 web/audio/
-web/img/icon-src
 web/img/*.xcf
 node_modules/
 /package-lock.json

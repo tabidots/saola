@@ -28,11 +28,13 @@ export class WordTracker {
         this.cleanup();
     }
 
-    toggle() {
-        this.enabled = !this.enabled;
-        if (!this.enabled) {
-            this.cleanup();
-        }
+    enable() {
+        this.enabled = true;
+    }
+
+    disable() {
+        this.enabled = false;
+        this.cleanup();
     }
 
     isThrottled() {
