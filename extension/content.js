@@ -2,7 +2,6 @@ import { initializeData } from './data-loader.js';
 import { registerHandlebarsHelpers } from '../shared/templates.js';
 import { WordTracker } from './word-tracker.js';
 import { PopupManager } from './popup-manager.js';
-import { DictionaryLookup } from './dictionary-lookup.js';
 import { SettingsManager } from './settings.js';
 
 async function init() {
@@ -19,8 +18,7 @@ async function init() {
         registerHandlebarsHelpers();
 
         const popupManager = new PopupManager(popup);
-        const dictionaryLookup = new DictionaryLookup();
-        const wordTracker = new WordTracker(popupManager, dictionaryLookup);
+        const wordTracker = new WordTracker(popupManager);
 
         wordTracker.start();
         

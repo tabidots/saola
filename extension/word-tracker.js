@@ -1,12 +1,15 @@
+import { getData } from './data-loader.js';
 import { HighlightOverlay } from './highlighter.js';
-import { findWordAtPosition, isMouseInWordRegion } from './text-utils.js';
+import { TextSegmenter, generateUniqueVariations } from './segmenter.js';
 
 export class WordTracker {
-    constructor(popupManager, dictionaryLookup) {
+    constructor(popupManager) {
         this.popupManager = popupManager;
-        this.dictionaryLookup = dictionaryLookup;
         this.highlightOverlay = new HighlightOverlay();
         this.enabled = true;
+
+        this.textSegmenter = new TextSegmenter();
+        this.segmentCache = new WeakMap();
 
         this.currentWordRange = null;
         this.currentWordText = '';
@@ -52,60 +55,43 @@ export class WordTracker {
 
         const ele = document.elementFromPoint(e.clientX, e.clientY);
         const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+
         if (["TEXTAREA", "INPUT", "SELECT", "HTML", "BODY"].includes(ele.tagName) ||
             !range || range.startContainer.nodeType !== Node.TEXT_NODE) {
-            this.clearCurrentWord();
-            this.highlightOverlay.clearAll();
-            this.popupManager.hide();
+            this.cleanup();
             return;
         }
 
-        let container = range.startContainer;
-        let offset = range.startOffset;
+        const container = range.startContainer;
+        const offset = range.startOffset;
         const text = container.data;
 
-        // Handle edge case at end of text node
-        if (offset === text.length) {
-            const nextSibling = container.nextSibling;
-            if (nextSibling?.nodeType === Node.TEXT_NODE) {
-                container = nextSibling;
-                offset = 0;
-            }
+        // Get or create segmentation for this text node
+        let segments = this.segmentCache.get(container);
+        if (!segments) {
+            segments = this.textSegmenter.segment(text);
+            this.segmentCache.set(container, segments);
         }
 
-        // Check if mouse is still within the current word region
-        if (this.currentWordRange && isMouseInWordRegion(e.clientX, e.clientY, this.currentWordRange)) {
-            // Mouse is still over the same word, no need to update
+        // Find which segment contains the cursor
+        const result = this.textSegmenter.findSegmentAtPosition(segments, offset);
+
+        if (!result) {
+            this.cleanup();
             return;
         }
 
-        // Find the word at cursor position with its boundaries
-        const wordInfo = findWordAtPosition(text, offset);
+        const { segment, index } = result;
 
-        if (!wordInfo) {
-            this.clearCurrentWord();
-            this.highlightOverlay.clearAll();
-            this.popupManager.hide();
-            return;
-        }
-
-        // Check if we're still on the same word (same text and position)
-        if (this.currentWordText === wordInfo.word &&
+        // Check if still on same segment
+        if (this.currentWordText === segment.normalized &&
             this.currentWordRange &&
             this.currentWordRange.container === container &&
-            this.currentWordRange.start === wordInfo.start) {
+            this.currentWordRange.start === segment.start) {
             return;
         }
-
-        // Update current word tracking
-        this.updateCurrentWord(container, wordInfo, e);
-
-        // Now look for dictionary matches centered on this word
-        const r = this.dictionaryLookup.findMatches(container, text, wordInfo)
-        if (!r) return;
-        const { matches, chunkInfo } = r;
-        this.highlightOverlay.highlightMatchedPhrase(container, chunkInfo, matches[0]);
-        this.popupManager.show(matches);
+        this.updateCurrentWord(container, segment, e);
+        this.findAndShowMatches(container, segment, e);
     }
 
     handleMouseLeave() {
@@ -118,21 +104,20 @@ export class WordTracker {
         this.popupManager.hide();
     }
 
-    updateCurrentWord(container, wordInfo, event) {
+    updateCurrentWord(container, segment, event) {
         this.currentWordRange = {
             container: container,
-            start: wordInfo.start,
-            end: wordInfo.end,
+            start: segment.start,
+            end: segment.end,
             timestamp: Date.now()
         };
-
-        this.currentWordText = wordInfo.word;
-
-        // Store the bounding rect for faster region checking
+        
+        this.currentWordText = segment.normalized;
+        
         try {
             const range = document.createRange();
-            range.setStart(container, wordInfo.start);
-            range.setEnd(container, wordInfo.end);
+            range.setStart(container, segment.start);
+            range.setEnd(container, segment.end);
             this.currentWordRange.rect = range.getBoundingClientRect();
         } catch (e) {
             this.currentWordRange.rect = null;
@@ -142,6 +127,51 @@ export class WordTracker {
     clearCurrentWord() {
         this.currentWordRange = null;
         this.currentWordText = '';
+    }
+
+    findAndShowMatches(container, segment, event) {
+        const { vnEn, vnIndex } = getData();
+        const matches = [];
+
+        // Look for the target segment
+        const normalized = segment.normalized;
+        const variations = generateUniqueVariations(normalized);
+
+        for (const variation of variations) {
+            if (vnIndex.has(variation)) {
+                const indices = vnIndex.get(variation);
+                const entries = Array.from(indices).map(idx => vnEn[idx]);
+
+                matches.push({
+                    raw: segment.text,
+                    normalized: variation,
+                    wordCount: segment.wordCount,
+                    maxFrequency: Math.max(...entries.map(e => e.freq || 0)),
+                    entries: entries
+                });
+            }
+        }
+
+        if (matches.length > 0) {
+            matches.sort((a, b) => this.compareMatches(a, b));
+
+            // Highlight the matched segment
+            this.highlightOverlay.clearAll();
+            this.highlightOverlay.highlightWord(container, segment.start, segment.end);
+
+            this.popupManager.show(matches, event.clientX, event.clientY);
+        } else {
+            this.cleanup();
+        }
+    }
+
+    compareMatches(a, b) {
+        // Prioritize longer matches
+        if (a.wordCount !== b.wordCount) return b.wordCount - a.wordCount;
+        // Then by exact case match
+        if (a.raw !== a.normalized || b.raw !== b.normalized) return a.raw.localeCompare(b.raw);
+        // Then by frequency
+        return b.maxFrequency - a.maxFrequency;
     }
 
 }

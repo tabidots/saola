@@ -233,9 +233,7 @@
   var HighlightOverlay = class {
     constructor() {
       this.overlay = null;
-      this.highlights = /* @__PURE__ */ new Map();
-      this.currentWordHash = null;
-      this.zIndex = 1e4;
+      this.currentHighlights = [];
       this.initOverlay();
     }
     initOverlay() {
@@ -248,85 +246,21 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: ${this.zIndex};
+            z-index: 10000;
         `;
       document.body.appendChild(this.overlay);
     }
-    // Create highlight for a specific range
-    createHighlight(range, color = "rgba(255, 255, 0, 0.3)", borderRadius = "2px") {
-      const rects = range.getClientRects();
-      const highlightId = this.generateId();
-      const highlightContainer = document.createElement("div");
-      highlightContainer.id = `highlight-${highlightId}`;
-      highlightContainer.style.cssText = `
-            position: absolute;
-            pointer-events: none;
-        `;
-      const highlightElements = [];
-      for (const rect of rects) {
-        if (rect.width === 0 || rect.height === 0) continue;
-        const highlight = document.createElement("div");
-        highlight.style.cssText = `
-                position: absolute;
-                left: ${rect.left}px;
-                top: ${rect.top}px;
-                width: ${rect.width}px;
-                height: ${rect.height}px;
-                background-color: ${color};
-                border-radius: ${borderRadius};
-                pointer-events: none;
-            `;
-        highlightContainer.appendChild(highlight);
-        highlightElements.push({
-          element: highlight,
-          rect
-        });
-      }
-      if (highlightElements.length === 0) {
-        return null;
-      }
-      this.overlay.appendChild(highlightContainer);
-      return {
-        id: highlightId,
-        container: highlightContainer,
-        elements: highlightElements
-      };
-    }
-    // Highlight a specific word/phrase
     highlightWord(container, start, end, color = "rgba(255, 255, 0, 0.3)") {
-      this.clearHighlight();
+      this.clearAll();
       try {
         const range = document.createRange();
         range.setStart(container, start);
         range.setEnd(container, end);
-        const highlight = this.createHighlight(range, color);
-        if (!highlight) return null;
-        const wordHash = this.getWordHash(container, start, end);
-        this.highlights.set(wordHash, highlight);
-        this.currentWordHash = wordHash;
-        return highlight;
-      } catch (e) {
-        console.error("Error creating highlight:", e);
-        return null;
-      }
-    }
-    // Highlight multiple ranges (for multi-word phrases)
-    highlightRanges(ranges, color = "rgba(255, 255, 0, 0.3)") {
-      this.clearHighlight();
-      const highlightId = this.generateId();
-      const highlightContainer = document.createElement("div");
-      highlightContainer.id = `highlight-${highlightId}`;
-      highlightContainer.style.cssText = `
-            position: absolute;
-            pointer-events: none;
-        `;
-      let allElements = [];
-      for (const range of ranges) {
         const rects = range.getClientRects();
         for (const rect of rects) {
           if (rect.width === 0 || rect.height === 0) continue;
-          const highlight2 = document.createElement("div");
-          highlight2.style.cssText = `
+          const highlight = document.createElement("div");
+          highlight.style.cssText = `
                     position: absolute;
                     left: ${rect.left}px;
                     top: ${rect.top}px;
@@ -336,80 +270,33 @@
                     border-radius: 2px;
                     pointer-events: none;
                 `;
-          highlightContainer.appendChild(highlight2);
-          allElements.push(highlight2);
+          this.overlay.appendChild(highlight);
+          this.currentHighlights.push(highlight);
         }
-      }
-      if (allElements.length === 0) {
-        return null;
-      }
-      this.overlay.appendChild(highlightContainer);
-      const highlight = {
-        id: highlightId,
-        container: highlightContainer,
-        elements: allElements
-      };
-      this.currentWordHash = highlightId;
-      this.highlights.set(highlightId, highlight);
-      return highlight;
-    }
-    // Clear specific highlight
-    clearHighlight(hash = null) {
-      const hashToClear = hash || this.currentWordHash;
-      if (!hashToClear || !this.highlights.has(hashToClear)) return;
-      const highlight = this.highlights.get(hashToClear);
-      if (highlight.container.parentNode) {
-        highlight.container.remove();
-      }
-      this.highlights.delete(hashToClear);
-      if (this.currentWordHash === hashToClear) {
-        this.currentWordHash = null;
+      } catch (e) {
+        console.error("Error creating highlight:", e);
       }
     }
-    // Clear all highlights
     clearAll() {
-      for (const [hash, highlight] of this.highlights) {
-        if (highlight.container.parentNode) {
-          highlight.container.remove();
+      for (const highlight of this.currentHighlights) {
+        if (highlight.parentNode) {
+          highlight.remove();
         }
       }
-      this.highlights.clear();
-      this.currentWordHash = null;
+      this.currentHighlights = [];
     }
-    // Generate unique ID
-    generateId() {
-      return Date.now().toString(36) + Math.random().toString(36).substr(2);
-    }
-    // Create hash for word identification
-    getWordHash(container, start, end) {
-      const text = container.data?.substring(start, end) || "";
-      return `${container.nodeName}-${start}-${end}-${text}`;
-    }
-    // Destroy overlay
     destroy() {
       this.clearAll();
       if (this.overlay && this.overlay.parentNode) {
         this.overlay.remove();
       }
     }
-    highlightMatchedPhrase(container, chunkInfo, match) {
-      const phraseStart = chunkInfo.start + match.startChar;
-      const phraseEnd = chunkInfo.start + match.endChar;
-      try {
-        const range = document.createRange();
-        range.setStart(container, phraseStart);
-        range.setEnd(container, phraseEnd);
-        this.highlightWord(container, phraseStart, phraseEnd, "rgba(255, 200, 50, 0.3)");
-      } catch (e) {
-        console.error("Error highlighting phrase:", e);
-      }
-    }
   };
 
-  // text-utils.js
+  // segmenter.js
   function normalizeVietnamese(text) {
     let normalized = text;
-    if (normalized === normalized.toUpperCase()) {
+    if (normalized.length > 1 && normalized === normalized.toUpperCase()) {
       normalized = normalized.toLowerCase();
     }
     return fixTonePlacement(normalized);
@@ -429,125 +316,146 @@
     }
     return tokens;
   }
-  function extractChunkAroundWord(text, wordStart, wordEnd, maxWords = 5) {
-    const wordCharRegex = /[\p{L}\p{M}\p{Nd}]/u;
-    const punctuationRegex = /[.!?,;:()\[\]{}"'_\-]/u;
-    const whitespaceRegex = /\s/u;
-    let start = wordStart;
-    let end = wordEnd;
-    let wordCount = 1;
-    let backWords = 0;
-    while (backWords < maxWords && start > 0) {
-      let prevEnd = start;
-      while (prevEnd > 0 && whitespaceRegex.test(text[prevEnd - 1])) {
-        prevEnd--;
-      }
-      if (prevEnd > 0 && punctuationRegex.test(text[prevEnd - 1])) {
-        break;
-      }
-      let prevStart = prevEnd;
-      while (prevStart > 0 && wordCharRegex.test(text[prevStart - 1])) {
-        prevStart--;
-      }
-      if (prevStart < prevEnd) {
-        start = prevStart;
-        backWords++;
-        wordCount++;
-      } else {
-        break;
-      }
-    }
-    let forwardWords = 0;
-    while (forwardWords < maxWords && end < text.length) {
-      while (end < text.length && whitespaceRegex.test(text[end])) {
-        end++;
-      }
-      if (end < text.length && punctuationRegex.test(text[end])) {
-        break;
-      }
-      let nextEnd = end;
-      while (nextEnd < text.length && wordCharRegex.test(text[nextEnd])) {
-        nextEnd++;
-      }
-      if (nextEnd > end) {
-        end = nextEnd;
-        forwardWords++;
-        wordCount++;
-      } else {
-        break;
-      }
-    }
-    const chunk = text.substring(start, end);
-    const cursorPosInChunk = wordStart - start + Math.floor((wordEnd - wordStart) / 2);
-    return { chunk, cursorPosInChunk, start, end, wordCount };
+  function generateUniqueVariations(phrase) {
+    const variations = [
+      phrase,
+      phrase.charAt(0).toLowerCase() + phrase.slice(1),
+      phrase.toLowerCase()
+    ];
+    return [...new Set(variations)];
   }
-  function findWordAtPosition(text, position) {
-    const wordCharRegex = /[\p{L}\p{M}\p{Nd}]/u;
-    if (position < 0 || position >= text.length || !wordCharRegex.test(text[position])) {
-      position = findNearestWordPosition(text, position);
-      if (position === -1) return null;
+  var TextSegmenter = class {
+    /**
+     * Segment text to minimize number of segments (prefer longer phrases)
+     * Use aggregate frequency as tiebreaker
+     */
+    constructor() {
+      this.freqCache = /* @__PURE__ */ new Map();
     }
-    let start = position;
-    while (start > 0 && wordCharRegex.test(text[start - 1])) {
-      start--;
-    }
-    let end = position;
-    while (end < text.length && wordCharRegex.test(text[end])) {
-      end++;
-    }
-    if (start === end) return null;
-    const word = text.substring(start, end);
-    return {
-      word,
-      start,
-      end,
-      length: end - start
-    };
-  }
-  function findNearestWordPosition(text, position) {
-    const wordCharRegex = /[\p{L}\p{M}\p{Nd}]/u;
-    if (position < text.length && wordCharRegex.test(text[position])) {
-      return position;
-    }
-    let backwardPos = position - 1;
-    while (backwardPos >= 0) {
-      if (wordCharRegex.test(text[backwardPos])) {
-        return backwardPos;
+    getHeadwordFrequency(headword) {
+      if (this.freqCache.has(headword)) {
+        return this.freqCache.get(headword);
       }
-      backwardPos--;
-    }
-    let forwardPos = position;
-    while (forwardPos < text.length) {
-      if (wordCharRegex.test(text[forwardPos])) {
-        return forwardPos;
+      const { vnIndex, vnEn } = getData();
+      let bestResult = { found: false, maxFreq: 0, variation: null };
+      const uniqueVariations = generateUniqueVariations(headword);
+      for (const variation of uniqueVariations) {
+        const indices = vnIndex.get(variation);
+        if (indices && indices.size > 0) {
+          let maxFreq = 0;
+          for (const idx of indices) {
+            const entry = vnEn[idx];
+            if (entry.freq > maxFreq) {
+              maxFreq = entry.freq;
+            }
+          }
+          if (!bestResult.found || variation === headword) {
+            bestResult = { found: true, maxFreq, variation };
+          }
+        }
       }
-      forwardPos++;
+      this.freqCache.set(headword, bestResult);
+      return bestResult;
     }
-    return -1;
-  }
-  function isMouseInWordRegion(mouseX, mouseY, wordRange) {
-    try {
-      const range = document.createRange();
-      range.setStart(wordRange.container, wordRange.start);
-      range.setEnd(wordRange.container, wordRange.end);
-      const rect = range.getBoundingClientRect();
-      if (!rect || rect.width === 0 || rect.height === 0) {
-        return false;
+    segment(text) {
+      const allTokens = tokenizeWithPositions(text);
+      const wordTokens = allTokens.filter((t) => t.isWord);
+      const n = wordTokens.length;
+      if (n === 0) return [];
+      const best = new Array(n + 1).fill(null);
+      const backtrack = new Array(n + 1).fill(null);
+      best[0] = { segmentCount: 0, totalFreq: 0 };
+      for (let i = 0; i < n; i++) {
+        if (!best[i]) continue;
+        for (let len = 1; len <= Math.min(5, n - i); len++) {
+          const phraseTokens = wordTokens.slice(i, i + len);
+          const startPos = phraseTokens[0].start;
+          const endPos = phraseTokens[phraseTokens.length - 1].end;
+          const phrase = text.substring(startPos, endPos);
+          const normalized = normalizeVietnamese(phrase);
+          const { found, maxFreq, variation } = this.getHeadwordFrequency(normalized);
+          if (!found && len > 1) continue;
+          const newSegmentCount = best[i].segmentCount + 1;
+          const newTotalFreq = best[i].totalFreq + maxFreq;
+          const shouldUpdate = !best[i + len] || newSegmentCount < best[i + len].segmentCount || newSegmentCount === best[i + len].segmentCount && newTotalFreq > best[i + len].totalFreq;
+          if (shouldUpdate) {
+            best[i + len] = {
+              segmentCount: newSegmentCount,
+              totalFreq: newTotalFreq
+            };
+            backtrack[i + len] = {
+              prevIndex: i,
+              phraseLength: len,
+              maxFreq,
+              found,
+              startPos,
+              endPos,
+              bestVariation: variation || normalized
+              // Store which variation matched
+            };
+          }
+        }
       }
-      const padding = 5;
-      return mouseX >= rect.left - padding && mouseX <= rect.right + padding && mouseY >= rect.top - padding && mouseY <= rect.bottom + padding;
-    } catch (e) {
-      return false;
+      if (!best[n]) {
+        console.warn("No valid segmentation found for:", text.substring(0, 50));
+        return wordTokens.map((token) => ({
+          text: token.text,
+          normalized: normalizeVietnamese(token.text),
+          start: token.start,
+          end: token.end,
+          wordCount: 1,
+          maxFreq: 0,
+          isUnknown: true
+        }));
+      }
+      const segments = [];
+      let idx = n;
+      while (idx > 0) {
+        const bt = backtrack[idx];
+        if (!bt) {
+          console.error("Backtrack failed at position", idx);
+          break;
+        }
+        const phrase = text.substring(bt.startPos, bt.endPos);
+        const normalized = normalizeVietnamese(phrase);
+        segments.unshift({
+          text: phrase,
+          normalized,
+          start: bt.startPos,
+          end: bt.endPos,
+          wordCount: bt.phraseLength,
+          maxFreq: bt.maxFreq,
+          isUnknown: !bt.found
+        });
+        idx = bt.prevIndex;
+      }
+      console.log("Segmented:", segments.map((s) => s.text).join(" | "));
+      return segments;
     }
-  }
+    findSegmentAtPosition(segments, cursorPos) {
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        if (cursorPos >= seg.start && cursorPos < seg.end) {
+          return { segment: seg, index: i };
+        }
+      }
+      return null;
+    }
+    // getContext(segments, segmentIndex, contextSize = 2) {
+    //     const start = Math.max(0, segmentIndex - contextSize);
+    //     const end = Math.min(segments.length, segmentIndex + contextSize + 1);
+    //     return segments.slice(start, end);
+    // }
+  };
 
   // word-tracker.js
   var WordTracker = class {
-    constructor(popupManager, dictionaryLookup) {
+    constructor(popupManager) {
       this.popupManager = popupManager;
-      this.dictionaryLookup = dictionaryLookup;
       this.highlightOverlay = new HighlightOverlay();
       this.enabled = true;
+      this.textSegmenter = new TextSegmenter();
+      this.segmentCache = /* @__PURE__ */ new WeakMap();
       this.currentWordRange = null;
       this.currentWordText = "";
       this.lastMouseEvent = null;
@@ -584,40 +492,28 @@
       const ele = document.elementFromPoint(e.clientX, e.clientY);
       const range = document.caretRangeFromPoint(e.clientX, e.clientY);
       if (["TEXTAREA", "INPUT", "SELECT", "HTML", "BODY"].includes(ele.tagName) || !range || range.startContainer.nodeType !== Node.TEXT_NODE) {
-        this.clearCurrentWord();
-        this.highlightOverlay.clearAll();
-        this.popupManager.hide();
+        this.cleanup();
         return;
       }
-      let container = range.startContainer;
-      let offset = range.startOffset;
+      const container = range.startContainer;
+      const offset = range.startOffset;
       const text = container.data;
-      if (offset === text.length) {
-        const nextSibling = container.nextSibling;
-        if (nextSibling?.nodeType === Node.TEXT_NODE) {
-          container = nextSibling;
-          offset = 0;
-        }
+      let segments = this.segmentCache.get(container);
+      if (!segments) {
+        segments = this.textSegmenter.segment(text);
+        this.segmentCache.set(container, segments);
       }
-      if (this.currentWordRange && isMouseInWordRegion(e.clientX, e.clientY, this.currentWordRange)) {
+      const result = this.textSegmenter.findSegmentAtPosition(segments, offset);
+      if (!result) {
+        this.cleanup();
         return;
       }
-      const wordInfo = findWordAtPosition(text, offset);
-      if (!wordInfo) {
-        this.clearCurrentWord();
-        this.highlightOverlay.clearAll();
-        this.popupManager.hide();
+      const { segment, index } = result;
+      if (this.currentWordText === segment.normalized && this.currentWordRange && this.currentWordRange.container === container && this.currentWordRange.start === segment.start) {
         return;
       }
-      if (this.currentWordText === wordInfo.word && this.currentWordRange && this.currentWordRange.container === container && this.currentWordRange.start === wordInfo.start) {
-        return;
-      }
-      this.updateCurrentWord(container, wordInfo, e);
-      const r = this.dictionaryLookup.findMatches(container, text, wordInfo);
-      if (!r) return;
-      const { matches, chunkInfo } = r;
-      this.highlightOverlay.highlightMatchedPhrase(container, chunkInfo, matches[0]);
-      this.popupManager.show(matches);
+      this.updateCurrentWord(container, segment, e);
+      this.findAndShowMatches(container, segment, e);
     }
     handleMouseLeave() {
       this.cleanup();
@@ -627,18 +523,18 @@
       this.highlightOverlay.clearAll();
       this.popupManager.hide();
     }
-    updateCurrentWord(container, wordInfo, event) {
+    updateCurrentWord(container, segment, event) {
       this.currentWordRange = {
         container,
-        start: wordInfo.start,
-        end: wordInfo.end,
+        start: segment.start,
+        end: segment.end,
         timestamp: Date.now()
       };
-      this.currentWordText = wordInfo.word;
+      this.currentWordText = segment.normalized;
       try {
         const range = document.createRange();
-        range.setStart(container, wordInfo.start);
-        range.setEnd(container, wordInfo.end);
+        range.setStart(container, segment.start);
+        range.setEnd(container, segment.end);
         this.currentWordRange.rect = range.getBoundingClientRect();
       } catch (e) {
         this.currentWordRange.rect = null;
@@ -647,6 +543,38 @@
     clearCurrentWord() {
       this.currentWordRange = null;
       this.currentWordText = "";
+    }
+    findAndShowMatches(container, segment, event) {
+      const { vnEn, vnIndex } = getData();
+      const matches = [];
+      const normalized = segment.normalized;
+      const variations = generateUniqueVariations(normalized);
+      for (const variation of variations) {
+        if (vnIndex.has(variation)) {
+          const indices = vnIndex.get(variation);
+          const entries = Array.from(indices).map((idx) => vnEn[idx]);
+          matches.push({
+            raw: segment.text,
+            normalized: variation,
+            wordCount: segment.wordCount,
+            maxFrequency: Math.max(...entries.map((e) => e.freq || 0)),
+            entries
+          });
+        }
+      }
+      if (matches.length > 0) {
+        matches.sort((a, b) => this.compareMatches(a, b));
+        this.highlightOverlay.clearAll();
+        this.highlightOverlay.highlightWord(container, segment.start, segment.end);
+        this.popupManager.show(matches, event.clientX, event.clientY);
+      } else {
+        this.cleanup();
+      }
+    }
+    compareMatches(a, b) {
+      if (a.wordCount !== b.wordCount) return b.wordCount - a.wordCount;
+      if (a.raw !== a.normalized || b.raw !== b.normalized) return a.raw.localeCompare(b.raw);
+      return b.maxFrequency - a.maxFrequency;
     }
   };
 
@@ -683,103 +611,6 @@
         this.popup.style.top = `${y}px`;
         this.popup.style.bottom = "unset";
       }
-    }
-  };
-
-  // dictionary-lookup.js
-  var DictionaryLookup = class {
-    findMatches(container, text, wordInfo) {
-      const chunkInfo = extractChunkAroundWord(text, wordInfo.start, wordInfo.end, 5);
-      const matches = this.findMatchesInChunk(chunkInfo.chunk, chunkInfo.cursorPosInChunk);
-      if (matches.length > 0) {
-        matches.sort(this.compareMatches);
-        return { matches, chunkInfo };
-      }
-      return null;
-    }
-    findMatchesInChunk(chunk, cursorPosInChunk) {
-      const tokens = tokenizeWithPositions(chunk);
-      if (tokens.length === 0) return matches;
-      let cursorTokenIndex = -1;
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        if (cursorPosInChunk >= token.start && cursorPosInChunk < token.end) {
-          cursorTokenIndex = i;
-          break;
-        }
-      }
-      if (cursorTokenIndex === -1) {
-        for (let i = 0; i < tokens.length; i++) {
-          if (cursorPosInChunk < tokens[i].start) {
-            cursorTokenIndex = i - 1;
-            break;
-          }
-        }
-        if (cursorTokenIndex === -1) {
-          cursorTokenIndex = tokens.length - 1;
-        }
-      }
-      const matches = this.findMatchesCenteredOnToken(tokens, cursorTokenIndex);
-      const lookaheadMatches = this.findMatchesCenteredOnToken(tokens, cursorTokenIndex + 1)?.filter(
-        (m) => m.startIndex > cursorTokenIndex && m.length > 1
-      );
-      const frequencyThreshold = lookaheadMatches.length > 0 ? Math.max(...lookaheadMatches.map((m) => m.maxFrequency)) : 0;
-      if (matches.filter((m) => m.maxFrequency >= frequencyThreshold).length > 0) {
-        return matches.filter((m) => m.maxFrequency >= frequencyThreshold);
-      } else {
-        return matches;
-      }
-    }
-    findMatchesCenteredOnToken(tokens, cursorTokenIndex) {
-      const { vnEn, vnIndex } = getData();
-      const matches = [];
-      for (let phraseLength = 5; phraseLength >= 1; phraseLength--) {
-        for (let startIdx = Math.max(0, cursorTokenIndex - phraseLength + 1); startIdx <= cursorTokenIndex && startIdx + phraseLength <= tokens.length; startIdx++) {
-          const phraseTokens = tokens.slice(startIdx, startIdx + phraseLength);
-          const allWords = phraseTokens.every((t) => t.isWord);
-          if (!allWords) continue;
-          const phrase = normalizeVietnamese(phraseTokens.map((t) => t.text).join(" "));
-          if (vnIndex.has(phrase)) {
-            const indices = vnIndex.get(phrase);
-            const startChar = phraseTokens[0].start;
-            const endChar = phraseTokens[phraseTokens.length - 1].end;
-            const entries = Array.from(indices).map((idx) => vnEn[idx]);
-            matches.push({
-              phrase,
-              length: phraseLength,
-              startIndex: startIdx,
-              startChar,
-              endChar,
-              maxFrequency: Math.max(...entries.map((e) => e.freq || 0)),
-              distanceFromCursor: Math.abs(startIdx + phraseLength / 2 - cursorTokenIndex),
-              entries
-            });
-          }
-          const lowercase = phrase.toLowerCase();
-          if (phrase !== lowercase && vnIndex.has(lowercase)) {
-            const indices = vnIndex.get(lowercase);
-            const startChar = phraseTokens[0].start;
-            const endChar = phraseTokens[phraseTokens.length - 1].end;
-            const entries = Array.from(indices).map((idx) => vnEn[idx]);
-            matches.push({
-              phrase,
-              length: phraseLength,
-              startIndex: startIdx,
-              startChar,
-              endChar,
-              maxFrequency: Math.max(...entries.map((e) => e.freq || 0)),
-              distanceFromCursor: Math.abs(startIdx + phraseLength / 2 - cursorTokenIndex),
-              entries
-            });
-          }
-        }
-        if (matches.length > 0) break;
-      }
-      return matches;
-    }
-    compareMatches(a, b) {
-      if (a.length !== b.length) return b.length - a.length;
-      return b.maxFrequency - a.maxFrequency;
     }
   };
 
@@ -842,8 +673,7 @@
       await initializeData();
       registerHandlebarsHelpers();
       const popupManager = new PopupManager(popup);
-      const dictionaryLookup = new DictionaryLookup();
-      const wordTracker = new WordTracker(popupManager, dictionaryLookup);
+      const wordTracker = new WordTracker(popupManager);
       wordTracker.start();
       chrome.runtime.onMessage.addListener((message) => {
         if (message.action === "setEnabled") {
