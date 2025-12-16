@@ -172,17 +172,39 @@
   async function initializeData() {
     const dataUrl = chrome.runtime.getURL("data/vnen.json.gz");
     data.vnEn = await loadGzipJson(dataUrl);
-    data.vnIndex = /* @__PURE__ */ new Map();
+    data.lowercaseIndex = /* @__PURE__ */ new Map();
     data.vnEn.forEach((entry, idx) => {
       entry._idx = idx;
-      const term = entry.word;
-      if (!term) return;
-      if (!data.vnIndex.has(term)) data.vnIndex.set(term, /* @__PURE__ */ new Set());
-      data.vnIndex.get(term).add(idx);
+      const terms = [entry.word, entry.alt_spelling].filter(Boolean);
+      for (const term of terms) {
+        const lower = term.toLowerCase();
+        if (!data.lowercaseIndex.has(lower)) {
+          data.lowercaseIndex.set(lower, []);
+        }
+        const canonicalForms = data.lowercaseIndex.get(lower);
+        if (canonicalForms.length > 2) {
+          console.log("Too many canonical forms:", canonicalForms);
+          continue;
+        }
+        let existing = canonicalForms.find((cf) => cf.canonical === term);
+        if (existing) {
+          console.log("Canonical form already exists:", existing);
+          continue;
+        }
+        canonicalForms.push({
+          canonical: term,
+          freq: entry.freq || 0,
+          index: idx
+        });
+      }
+      ;
     });
   }
   function getData() {
-    return { vnEn: data.vnEn, vnIndex: data.vnIndex };
+    return {
+      vnEn: data.vnEn,
+      lowercaseIndex: data.lowercaseIndex
+    };
   }
 
   // ../shared/templates.js
@@ -316,13 +338,8 @@
     }
     return tokens;
   }
-  function generateUniqueVariations(phrase) {
-    const variations = [
-      phrase,
-      phrase.charAt(0).toLowerCase() + phrase.slice(1),
-      phrase.toLowerCase()
-    ];
-    return [...new Set(variations)];
+  function hasCapital(text) {
+    return text !== text.toLowerCase();
   }
   var TextSegmenter = class {
     /**
@@ -332,32 +349,52 @@
     constructor() {
       this.freqCache = /* @__PURE__ */ new Map();
     }
-    getHeadwordFrequency(headword) {
-      if (this.freqCache.has(headword)) {
-        return this.freqCache.get(headword);
+    getBestMatchingHeadword(rawText) {
+      if (this.freqCache.has(rawText)) {
+        return this.freqCache.get(rawText);
       }
-      const { vnIndex, vnEn } = getData();
-      let bestResult = { found: false, maxFreq: 0, variation: null };
-      const uniqueVariations = generateUniqueVariations(headword);
-      for (const variation of uniqueVariations) {
-        const indices = vnIndex.get(variation);
-        if (indices && indices.size > 0) {
-          let maxFreq = 0;
-          for (const idx of indices) {
-            const entry = vnEn[idx];
-            if (entry.freq > maxFreq) {
-              maxFreq = entry.freq;
-            }
-          }
-          if (!bestResult.found || variation === headword) {
-            bestResult = { found: true, maxFreq, variation };
-          }
-        }
+      const { lowercaseIndex } = getData();
+      const lowercaseRaw = rawText.toLowerCase();
+      const canonicalForms = lowercaseIndex.get(lowercaseRaw);
+      let result = {
+        found: false,
+        canonical: null,
+        frequency: 0,
+        primaryMatch: null,
+        secondaryMatch: null
+      };
+      if (!canonicalForms || canonicalForms.length === 0) {
+        this.freqCache.set(rawText, result);
+        return result;
       }
-      this.freqCache.set(headword, bestResult);
-      return bestResult;
+      const lowercaseForm = canonicalForms.find((cf) => !hasCapital(cf.canonical));
+      const capitalForm = canonicalForms.find((cf) => hasCapital(cf.canonical));
+      if (hasCapital(rawText) && capitalForm) {
+        result = {
+          found: true,
+          canonical: capitalForm.canonical,
+          frequency: capitalForm.freq,
+          primaryMatch: capitalForm.index,
+          secondaryMatch: lowercaseForm?.index
+        };
+      } else {
+        const bestForm = lowercaseForm || capitalForm || canonicalForms[0];
+        const otherForm = canonicalForms.length > 1 ? canonicalForms.find(
+          (cf) => cf.index !== bestForm.index
+        ) : null;
+        result = {
+          found: true,
+          canonical: bestForm.canonical,
+          frequency: bestForm.freq,
+          primaryMatch: bestForm.index,
+          secondaryMatch: otherForm?.index
+        };
+      }
+      this.freqCache.set(rawText, result);
+      return result;
     }
     segment(text) {
+      const { vnEn } = getData();
       const allTokens = tokenizeWithPositions(text);
       const wordTokens = allTokens.filter((t) => t.isWord);
       const n = wordTokens.length;
@@ -371,12 +408,11 @@
           const phraseTokens = wordTokens.slice(i, i + len);
           const startPos = phraseTokens[0].start;
           const endPos = phraseTokens[phraseTokens.length - 1].end;
-          const phrase = text.substring(startPos, endPos);
-          const normalized = normalizeVietnamese(phrase);
-          const { found, maxFreq, variation } = this.getHeadwordFrequency(normalized);
+          const rawText = normalizeVietnamese(text.substring(startPos, endPos));
+          const { found, frequency, canonical, primaryMatch, secondaryMatch } = this.getBestMatchingHeadword(rawText);
           if (!found && len > 1) continue;
           const newSegmentCount = best[i].segmentCount + 1;
-          const newTotalFreq = best[i].totalFreq + maxFreq;
+          const newTotalFreq = best[i].totalFreq + frequency;
           const shouldUpdate = !best[i + len] || newSegmentCount < best[i + len].segmentCount || newSegmentCount === best[i + len].segmentCount && newTotalFreq > best[i + len].totalFreq;
           if (shouldUpdate) {
             best[i + len] = {
@@ -386,12 +422,13 @@
             backtrack[i + len] = {
               prevIndex: i,
               phraseLength: len,
-              maxFreq,
+              frequency,
               found,
               startPos,
               endPos,
-              bestVariation: variation || normalized
-              // Store which variation matched
+              canonical,
+              primaryMatch,
+              secondaryMatch
             };
           }
         }
@@ -404,7 +441,7 @@
           start: token.start,
           end: token.end,
           wordCount: 1,
-          maxFreq: 0,
+          frequency: 0,
           isUnknown: true
         }));
       }
@@ -416,16 +453,17 @@
           console.error("Backtrack failed at position", idx);
           break;
         }
-        const phrase = text.substring(bt.startPos, bt.endPos);
-        const normalized = normalizeVietnamese(phrase);
+        const rawText = normalizeVietnamese(text.substring(bt.startPos, bt.endPos));
         segments.unshift({
-          text: phrase,
-          normalized,
+          text: rawText,
+          canonical: bt.canonical,
           start: bt.startPos,
           end: bt.endPos,
           wordCount: bt.phraseLength,
-          maxFreq: bt.maxFreq,
-          isUnknown: !bt.found
+          frequency: bt.frequency,
+          isUnknown: !bt.found,
+          primaryEntry: bt.primaryMatch ? vnEn[bt.primaryMatch] : null,
+          secondaryEntry: bt.secondaryMatch ? vnEn[bt.secondaryMatch] : null
         });
         idx = bt.prevIndex;
       }
@@ -441,11 +479,6 @@
       }
       return null;
     }
-    // getContext(segments, segmentIndex, contextSize = 2) {
-    //     const start = Math.max(0, segmentIndex - contextSize);
-    //     const end = Math.min(segments.length, segmentIndex + contextSize + 1);
-    //     return segments.slice(start, end);
-    // }
   };
 
   // word-tracker.js
@@ -486,7 +519,7 @@
       return false;
     }
     handleMouseMove(e) {
-      if (!this.enabled || this.isThrottled()) return;
+      if (!this.enabled) return;
       this.lastMouseEvent = e;
       this.popupManager.position(e.clientX, e.clientY);
       const ele = document.elementFromPoint(e.clientX, e.clientY);
@@ -498,10 +531,18 @@
       const container = range.startContainer;
       const offset = range.startOffset;
       const text = container.data;
-      let segments = this.segmentCache.get(container);
-      if (!segments) {
+      let cached = this.segmentCache.get(container);
+      let segments;
+      if (!cached || cached.text !== text) {
         segments = this.textSegmenter.segment(text);
-        this.segmentCache.set(container, segments);
+        this.segmentCache.set(container, {
+          segments,
+          text,
+          // Store the text too!
+          timestamp: Date.now()
+        });
+      } else {
+        segments = cached.segments;
       }
       const result = this.textSegmenter.findSegmentAtPosition(segments, offset);
       if (!result) {
@@ -513,7 +554,11 @@
         return;
       }
       this.updateCurrentWord(container, segment, e);
-      this.findAndShowMatches(container, segment, e);
+      const matches = [segment.primaryEntry, segment.secondaryEntry].filter(Boolean);
+      if (!matches.length) return;
+      this.highlightOverlay.clearAll();
+      this.highlightOverlay.highlightWord(container, segment.start, segment.end);
+      this.popupManager.show(matches, event.clientX, event.clientY);
     }
     handleMouseLeave() {
       this.cleanup();
@@ -523,7 +568,7 @@
       this.highlightOverlay.clearAll();
       this.popupManager.hide();
     }
-    updateCurrentWord(container, segment, event) {
+    updateCurrentWord(container, segment, event2) {
       this.currentWordRange = {
         container,
         start: segment.start,
@@ -544,38 +589,6 @@
       this.currentWordRange = null;
       this.currentWordText = "";
     }
-    findAndShowMatches(container, segment, event) {
-      const { vnEn, vnIndex } = getData();
-      const matches = [];
-      const normalized = segment.normalized;
-      const variations = generateUniqueVariations(normalized);
-      for (const variation of variations) {
-        if (vnIndex.has(variation)) {
-          const indices = vnIndex.get(variation);
-          const entries = Array.from(indices).map((idx) => vnEn[idx]);
-          matches.push({
-            raw: segment.text,
-            normalized: variation,
-            wordCount: segment.wordCount,
-            maxFrequency: Math.max(...entries.map((e) => e.freq || 0)),
-            entries
-          });
-        }
-      }
-      if (matches.length > 0) {
-        matches.sort((a, b) => this.compareMatches(a, b));
-        this.highlightOverlay.clearAll();
-        this.highlightOverlay.highlightWord(container, segment.start, segment.end);
-        this.popupManager.show(matches, event.clientX, event.clientY);
-      } else {
-        this.cleanup();
-      }
-    }
-    compareMatches(a, b) {
-      if (a.wordCount !== b.wordCount) return b.wordCount - a.wordCount;
-      if (a.raw !== a.normalized || b.raw !== b.normalized) return a.raw.localeCompare(b.raw);
-      return b.maxFrequency - a.maxFrequency;
-    }
   };
 
   // popup-manager.js
@@ -586,11 +599,9 @@
     }
     show(results) {
       this.popup.innerHTML = "";
-      results.forEach((result) => {
-        result.entries.forEach((entry) => {
-          this.popup.innerHTML += Handlebars.templates.popup(entry);
-        });
-      });
+      for (const entry of results) {
+        this.popup.innerHTML += Handlebars.templates.popup(entry);
+      }
       this.popup.style.display = "flex";
     }
     hide() {
@@ -598,18 +609,18 @@
     }
     position(x, y) {
       if (x + this.margin + this.popup.offsetWidth > window.innerWidth) {
-        this.popup.style.right = "0px";
         this.popup.style.left = "unset";
+        this.popup.style.right = "0px";
       } else {
-        this.popup.style.left = `${x}px`;
         this.popup.style.right = "unset";
+        this.popup.style.left = `${x}px`;
       }
       if (y + this.margin + this.popup.offsetHeight > window.innerHeight) {
-        this.popup.style.bottom = `${window.innerHeight - y + this.margin}px`;
         this.popup.style.top = "unset";
+        this.popup.style.bottom = `${window.innerHeight - y + this.margin}px`;
       } else {
-        this.popup.style.top = `${y}px`;
         this.popup.style.bottom = "unset";
+        this.popup.style.top = `${y}px`;
       }
     }
   };

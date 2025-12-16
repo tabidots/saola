@@ -1,6 +1,5 @@
-import { getData } from './data-loader.js';
 import { HighlightOverlay } from './highlighter.js';
-import { TextSegmenter, generateUniqueVariations } from './segmenter.js';
+import { TextSegmenter } from './segmenter.js';
 
 export class WordTracker {
     constructor(popupManager) {
@@ -48,7 +47,7 @@ export class WordTracker {
     }
 
     handleMouseMove(e) {
-        if (!this.enabled || this.isThrottled()) return;
+        if (!this.enabled) return;
 
         this.lastMouseEvent = e;
         this.popupManager.position(e.clientX, e.clientY);
@@ -67,10 +66,20 @@ export class WordTracker {
         const text = container.data;
 
         // Get or create segmentation for this text node
-        let segments = this.segmentCache.get(container);
-        if (!segments) {
+        let cached = this.segmentCache.get(container);
+        let segments;
+
+        // Check if cached text matches current text
+        // In cases like Google Maps review translations, the text can change
+        if (!cached || cached.text !== text) {
             segments = this.textSegmenter.segment(text);
-            this.segmentCache.set(container, segments);
+            this.segmentCache.set(container, {
+                segments,
+                text: text, // Store the text too!
+                timestamp: Date.now()
+            });
+        } else {
+            segments = cached.segments;
         }
 
         // Find which segment contains the cursor
@@ -91,7 +100,13 @@ export class WordTracker {
             return;
         }
         this.updateCurrentWord(container, segment, e);
-        this.findAndShowMatches(container, segment, e);
+        
+        const matches = [segment.primaryEntry, segment.secondaryEntry].filter(Boolean);
+        if (!matches.length) return;
+
+        this.highlightOverlay.clearAll();
+        this.highlightOverlay.highlightWord(container, segment.start, segment.end);
+        this.popupManager.show(matches, event.clientX, event.clientY);
     }
 
     handleMouseLeave() {
@@ -127,51 +142,6 @@ export class WordTracker {
     clearCurrentWord() {
         this.currentWordRange = null;
         this.currentWordText = '';
-    }
-
-    findAndShowMatches(container, segment, event) {
-        const { vnEn, vnIndex } = getData();
-        const matches = [];
-
-        // Look for the target segment
-        const normalized = segment.normalized;
-        const variations = generateUniqueVariations(normalized);
-
-        for (const variation of variations) {
-            if (vnIndex.has(variation)) {
-                const indices = vnIndex.get(variation);
-                const entries = Array.from(indices).map(idx => vnEn[idx]);
-
-                matches.push({
-                    raw: segment.text,
-                    normalized: variation,
-                    wordCount: segment.wordCount,
-                    maxFrequency: Math.max(...entries.map(e => e.freq || 0)),
-                    entries: entries
-                });
-            }
-        }
-
-        if (matches.length > 0) {
-            matches.sort((a, b) => this.compareMatches(a, b));
-
-            // Highlight the matched segment
-            this.highlightOverlay.clearAll();
-            this.highlightOverlay.highlightWord(container, segment.start, segment.end);
-
-            this.popupManager.show(matches, event.clientX, event.clientY);
-        } else {
-            this.cleanup();
-        }
-    }
-
-    compareMatches(a, b) {
-        // Prioritize longer matches
-        if (a.wordCount !== b.wordCount) return b.wordCount - a.wordCount;
-        // Then by exact case match
-        if (a.raw !== a.normalized || b.raw !== b.normalized) return a.raw.localeCompare(b.raw);
-        // Then by frequency
-        return b.maxFrequency - a.maxFrequency;
     }
 
 }

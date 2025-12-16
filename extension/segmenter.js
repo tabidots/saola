@@ -28,13 +28,8 @@ function tokenizeWithPositions(text) {
     return tokens;
 }
 
-export function generateUniqueVariations(phrase) {
-    const variations = [
-        phrase,
-        phrase.charAt(0).toLowerCase() + phrase.slice(1),
-        phrase.toLowerCase()
-    ];
-    return [...new Set(variations)];
+function hasCapital(text) {
+    return text !== text.toLowerCase();
 }
 
 export class TextSegmenter {
@@ -43,42 +38,67 @@ export class TextSegmenter {
      * Use aggregate frequency as tiebreaker
      */
     constructor() {
-        this.freqCache = new Map(); // normalizedPhrase -> {found, maxFreq, variation}
+        this.freqCache = new Map(); // normalizedPhrase -> {found, frequency, variation}
     }
 
-    getHeadwordFrequency(headword) {
-        if (this.freqCache.has(headword)) {
-            return this.freqCache.get(headword);
+    getBestMatchingHeadword(rawText) {
+        if (this.freqCache.has(rawText)) {
+            return this.freqCache.get(rawText);
         }
 
-        const { vnIndex, vnEn } = getData();
-        let bestResult = { found: false, maxFreq: 0, variation: null };
+        const { lowercaseIndex } = getData();
+        const lowercaseRaw = rawText.toLowerCase();
+        const canonicalForms = lowercaseIndex.get(lowercaseRaw);
 
-        const uniqueVariations = generateUniqueVariations(headword);
+        let result = {
+            found: false,
+            canonical: null,
+            frequency: 0,
+            primaryMatch: null,
+            secondaryMatch: null
+        };
 
-        for (const variation of uniqueVariations) {
-            const indices = vnIndex.get(variation);
-            if (indices && indices.size > 0) {
-                let maxFreq = 0;
-                for (const idx of indices) {
-                    const entry = vnEn[idx];
-                    if (entry.freq > maxFreq) {
-                        maxFreq = entry.freq;
-                    }
-                }
-
-                // Prefer exact match if available
-                if (!bestResult.found || variation === headword) {
-                    bestResult = { found: true, maxFreq, variation };
-                }
-            }
+        if (!canonicalForms || canonicalForms.length === 0) {
+            this.freqCache.set(rawText, result);
+            return result;
         }
 
-        this.freqCache.set(headword, bestResult);
-        return bestResult;
+        // Since max 2 canonical forms: one lowercase, one with capitals
+        const lowercaseForm = canonicalForms.find(cf => !hasCapital(cf.canonical));
+        const capitalForm = canonicalForms.find(cf => hasCapital(cf.canonical));
+
+        // Decision logic:
+        // 1. If text has capitals AND we have a capital canonical form → use it
+        // 2. Otherwise → use lowercase canonical form (or capital if that's all we have)
+
+        if (hasCapital(rawText) && capitalForm) {
+            result = {
+                found: true,
+                canonical: capitalForm.canonical,
+                frequency: capitalForm.freq,
+                primaryMatch: capitalForm.index,
+                secondaryMatch: lowercaseForm?.index
+            };
+        } else {
+            // Use lowercase form if available, otherwise use whatever we have
+            const bestForm = lowercaseForm || capitalForm || canonicalForms[0];
+            const otherForm = canonicalForms.length > 1 ? canonicalForms.find(
+                cf => cf.index !== bestForm.index) : null;
+            result = {
+                found: true,
+                canonical: bestForm.canonical,
+                frequency: bestForm.freq,
+                primaryMatch: bestForm.index,
+                secondaryMatch: otherForm?.index
+            };
+        }
+
+        this.freqCache.set(rawText, result);
+        return result;
     }
 
     segment(text) {
+        const { vnEn } = getData();
         const allTokens = tokenizeWithPositions(text);
         const wordTokens = allTokens.filter(t => t.isWord);
 
@@ -101,17 +121,16 @@ export class TextSegmenter {
                 // Reconstruct phrase from tokens (handles spaces between them)
                 const startPos = phraseTokens[0].start;
                 const endPos = phraseTokens[phraseTokens.length - 1].end;
-                const phrase = text.substring(startPos, endPos);
-                const normalized = normalizeVietnamese(phrase);
+                const rawText = normalizeVietnamese(text.substring(startPos, endPos));
 
-                // Check if phrase exists in dictionary (checking all variations)
-                const { found, maxFreq, variation } = this.getHeadwordFrequency(normalized);
+                // Check if phrase exists in dictionary (case-aware)
+                const { found, frequency, canonical, primaryMatch, secondaryMatch } = this.getBestMatchingHeadword(rawText);
 
                 // Allow single unknown words, but block multi-word unknowns
                 if (!found && len > 1) continue;
 
                 const newSegmentCount = best[i].segmentCount + 1;
-                const newTotalFreq = best[i].totalFreq + maxFreq;
+                const newTotalFreq = best[i].totalFreq + frequency;
 
                 // Compare: prefer fewer segments, then higher frequency
                 const shouldUpdate = !best[i + len] ||
@@ -127,11 +146,13 @@ export class TextSegmenter {
                     backtrack[i + len] = {
                         prevIndex: i,
                         phraseLength: len,
-                        maxFreq: maxFreq,
+                        frequency: frequency,
                         found: found,
                         startPos: startPos,
                         endPos: endPos,
-                        bestVariation: variation || normalized // Store which variation matched
+                        canonical: canonical,
+                        primaryMatch: primaryMatch,
+                        secondaryMatch: secondaryMatch
                     };
                 }
             }
@@ -146,7 +167,7 @@ export class TextSegmenter {
                 start: token.start,
                 end: token.end,
                 wordCount: 1,
-                maxFreq: 0,
+                frequency: 0,
                 isUnknown: true
             }));
         }
@@ -162,17 +183,18 @@ export class TextSegmenter {
                 break;
             }
 
-            const phrase = text.substring(bt.startPos, bt.endPos);
-            const normalized = normalizeVietnamese(phrase);
+            const rawText = normalizeVietnamese(text.substring(bt.startPos, bt.endPos));
 
             segments.unshift({
-                text: phrase,
-                normalized: normalized,
+                text: rawText,
+                canonical: bt.canonical,
                 start: bt.startPos,
                 end: bt.endPos,
                 wordCount: bt.phraseLength,
-                maxFreq: bt.maxFreq,
-                isUnknown: !bt.found
+                frequency: bt.frequency,
+                isUnknown: !bt.found,
+                primaryEntry: bt.primaryMatch ? vnEn[bt.primaryMatch] : null,
+                secondaryEntry: bt.secondaryMatch ? vnEn[bt.secondaryMatch] : null
             });
 
             idx = bt.prevIndex;
@@ -191,10 +213,4 @@ export class TextSegmenter {
         }
         return null;
     }
-
-    // getContext(segments, segmentIndex, contextSize = 2) {
-    //     const start = Math.max(0, segmentIndex - contextSize);
-    //     const end = Math.min(segments.length, segmentIndex + contextSize + 1);
-    //     return segments.slice(start, end);
-    // }
 }
