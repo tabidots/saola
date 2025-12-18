@@ -658,7 +658,9 @@
       this.popupManager.position(e.clientX, e.clientY);
       const ele = document.elementFromPoint(e.clientX, e.clientY);
       const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-      if (["TEXTAREA", "INPUT", "SELECT", "HTML", "BODY"].includes(ele.tagName) || !range || range.startContainer.nodeType !== Node.TEXT_NODE) {
+      if (["TEXTAREA", "INPUT", "SELECT", "HTML", "BODY"].includes(
+        ele?.tagName ?? "UNDEFINED_TAG"
+      ) || !range || range.startContainer.nodeType !== Node.TEXT_NODE) {
         this.cleanup();
         return;
       }
