@@ -3,7 +3,19 @@ export class PopupManager {
         this.settingsManager = settingsManager;
         this.margin = 10;
         this.popup = null; // Initialize as null
+        this.shortcuts = {
+            hn: "Alt+W", // Default fallbacks
+            sg: "Alt+D"
+        };
     }
+
+    async init() {
+        await this.createShadowPopup();
+        await this.loadShortcuts();
+        this.setupSettingsListener();
+        return this;
+    }
+
 
     async createShadowPopup() {
         // Create container in light DOM
@@ -37,7 +49,23 @@ export class PopupManager {
         this.shadow = shadow;
 
         this.applyTheme();
-        this.setupThemeListener();
+    }
+
+    async loadShortcuts() {
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'get-shortcuts'
+            });
+
+            if (response.success) {
+                this.shortcuts = response.shortcuts;
+            } else {
+                console.log('Failed to load shortcuts:', response.error);
+            }
+        } catch (error) {
+            console.log('Error loading shortcuts:', error);
+            // Keep defaults
+        }
     }
 
     applyTheme() {
@@ -56,10 +84,11 @@ export class PopupManager {
         this.popup.setAttribute('data-dialect', settings.dialect);
     }
 
-    setupThemeListener() {
+    setupSettingsListener() {
         // Listen for settings changes
         this.settingsManager.onChanged(() => {
             this.applyTheme();
+            this.loadShortcuts();
         });
     }
 
@@ -68,8 +97,11 @@ export class PopupManager {
             console.error('Popup not created yet. Call createShadowPopup() first.');
             return;
         }
-
-        this.popup.innerHTML = Handlebars.templates.popup(results);
+        this.popup.innerHTML = '';
+        if (results.hasAudio) {
+            this.popup.innerHTML = Handlebars.templates.audiorow(this.shortcuts);
+        }
+        this.popup.innerHTML += Handlebars.templates.popup(results);
         this.popup.style.display = 'flex';
     }
 

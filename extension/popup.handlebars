@@ -1,16 +1,3 @@
-{{#if hasAudio}}
-<div class="audio-row">
-    <span class="audio-cell audio-cell-hn">
-        <span class="audio-icon"></span>
-        HN <kbd>Alt</kbd> + <kbd>W</kbd>
-    </span>
-    <span class="audio-cell audio-cell-sg">
-        <span class="audio-icon"></span>
-        SG <kbd>Alt</kbd> + <kbd>D</kbd>
-    </span>
-</div>
-{{/if}}
-
 <div class="entries">
     {{#each entries}}
     <div class="entry">
@@ -41,9 +28,9 @@
                 {{#each senses}}
                 <div class="sense {{#if (eq ../senses.length 1) }}single{{/if}}">
                     {{#if tags}}
-                    <ul class="tags">
-                        {{#each tags}}<li class="tag">{{this}}</li>{{/each}}
-                    </ul>
+                    <div class="tags">
+                        {{#each tags}}<span class="tag">{{this}}</span> {{/each}}
+                    </div>
                     {{/if}}
                     {{#if qualifiers}}
                     <span class="qualifiers">{{join qualifiers ", "}}</span>

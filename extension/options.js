@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     refreshOptions();
 
     // Also refresh when tab becomes visible
@@ -7,6 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshOptions();
         }
     });
+
+    document.getElementById('open-shortcuts').addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+    });
+
+    await displayCurrentShortcuts();
 });
 
 function refreshOptions() {
@@ -52,3 +59,21 @@ function saveSettings() {
 document.getElementById('theme').addEventListener('change', saveSettings);
 document.getElementById('pronunciation').addEventListener('change', saveSettings);
 document.getElementById('dialect').addEventListener('change', saveSettings);
+
+async function displayCurrentShortcuts() {
+    try {
+        const commands = await chrome.commands.getAll();
+
+        const activationShortcut = commands.find(command => command.name === '_execute_action')?.shortcut;
+        document.getElementById('activation-shortcut').textContent = activationShortcut || 'Not set';
+
+        const hanoiAudioShortcut = commands.find(command => command.description.includes('Hanoi'))?.shortcut;
+        document.getElementById('hanoi-audio-shortcut').textContent = hanoiAudioShortcut || 'Not set';
+
+        const saigonAudioShortcut = commands.find(command => command.description.includes('Saigon'))?.shortcut;
+        document.getElementById('saigon-audio-shortcut').textContent = saigonAudioShortcut || 'Not set';
+
+    } catch (error) {
+        console.error('Error fetching shortcuts:', error);
+    }
+}

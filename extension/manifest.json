@@ -5,7 +5,8 @@
     "author": "Justin Douglas",
     "description": "Vietnamese-English popup dictionary",
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "background.js",
+        "type": "module"
     },
     "content_scripts": [
         {
@@ -15,6 +16,7 @@
             "js": [
                 "handlebars.runtime-25c696b.js",
                 "popup.precompiled.js",
+                "audiorow.precompiled.js",
                 "bundle.js"
             ],
             "css": [
@@ -45,7 +47,8 @@
             "resources": [
                 "data/vnen.json.gz",
                 "img/*",
-                "popup.css"
+                "popup.css",
+                "options.html"
             ],
             "matches": [
                 "<all_urls>"
@@ -58,12 +61,11 @@
         "commands"
     ],
     "commands": {
-        "toggle-saola": {
+        "_execute_action": {
             "suggested_key": {
                 "default": "Alt+A",
                 "mac": "Alt+A"
-            },
-            "description": "Toggle SaoLa on/off"
+            }
         },
         "play-hn-audio": {
             "suggested_key": {
@@ -79,5 +81,8 @@
             },
             "description": "Play current word in Saigon accent"
         }
+    },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'"
     }
 }

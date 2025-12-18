@@ -228,7 +228,7 @@ export class TextSegmenter {
             idx = bt.prevIndex;
         }
 
-        console.log('Segmented:', segments.map(s => s.text).join(' | '));
+        // console.log('Segmented:', segments.map(s => s.text).join(' | '));
         return this.mergeNameSegments(segments);
     }
 

@@ -14,7 +14,7 @@ async function init() {
         registerHandlebarsHelpers();
 
         const popupManager = new PopupManager(settingsManager);
-        await popupManager.createShadowPopup();
+        await popupManager.init();
         
         const wordTracker = new WordTracker(popupManager);
         wordTracker.start();

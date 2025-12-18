@@ -503,7 +503,6 @@
         });
         idx = bt.prevIndex;
       }
-      console.log("Segmented:", segments.map((s) => s.text).join(" | "));
       return this.mergeNameSegments(segments);
     }
     findSegmentAtPosition(segments, cursorPos) {
@@ -741,6 +740,17 @@
       this.settingsManager = settingsManager;
       this.margin = 10;
       this.popup = null;
+      this.shortcuts = {
+        hn: "Alt+W",
+        // Default fallbacks
+        sg: "Alt+D"
+      };
+    }
+    async init() {
+      await this.createShadowPopup();
+      await this.loadShortcuts();
+      this.setupSettingsListener();
+      return this;
     }
     async createShadowPopup() {
       const container = document.createElement("div");
@@ -763,7 +773,20 @@
       this.container = container;
       this.shadow = shadow;
       this.applyTheme();
-      this.setupThemeListener();
+    }
+    async loadShortcuts() {
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: "get-shortcuts"
+        });
+        if (response.success) {
+          this.shortcuts = response.shortcuts;
+        } else {
+          console.log("Failed to load shortcuts:", response.error);
+        }
+      } catch (error) {
+        console.log("Error loading shortcuts:", error);
+      }
     }
     applyTheme() {
       if (!this.popup) return;
@@ -776,9 +799,10 @@
       this.popup.setAttribute("data-pronunciation", settings.pronunciation);
       this.popup.setAttribute("data-dialect", settings.dialect);
     }
-    setupThemeListener() {
+    setupSettingsListener() {
       this.settingsManager.onChanged(() => {
         this.applyTheme();
+        this.loadShortcuts();
       });
     }
     show(results) {
@@ -786,7 +810,11 @@
         console.error("Popup not created yet. Call createShadowPopup() first.");
         return;
       }
-      this.popup.innerHTML = Handlebars.templates.popup(results);
+      this.popup.innerHTML = "";
+      if (results.hasAudio) {
+        this.popup.innerHTML = Handlebars.templates.audiorow(this.shortcuts);
+      }
+      this.popup.innerHTML += Handlebars.templates.popup(results);
       this.popup.style.display = "flex";
     }
     hide() {
@@ -1058,7 +1086,7 @@
       await initializeData();
       registerHandlebarsHelpers();
       const popupManager = new PopupManager(settingsManager);
-      await popupManager.createShadowPopup();
+      await popupManager.init();
       const wordTracker = new WordTracker(popupManager);
       wordTracker.start();
       const audioPlayer = new AudioPlayer();

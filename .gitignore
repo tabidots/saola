@@ -10,6 +10,7 @@ make_icons.sh
 extension/handlebars.runtime-25c696b.js
 extension/img/
 extension/data/
+extension/listing-assets/
 shared/*.min.js
 web/audio/
 web/img/*.xcf

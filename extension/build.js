@@ -5,6 +5,11 @@ execSync(
     { stdio: 'inherit', cwd: __dirname }
 );
 
+execSync(
+    `handlebars audiorow.handlebars -f audiorow.precompiled.js`,
+    { stdio: 'inherit', cwd: __dirname }
+);
+
 // Bundle content.js with all dependencies
 execSync(
     `npx esbuild content.js \

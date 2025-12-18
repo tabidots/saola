@@ -58,6 +58,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         return true; // Keep channel open
     }
+
+    if (message.type === 'get-shortcuts') {
+        chrome.commands.getAll().then(commands => {
+            const shortcuts = {};
+            commands.forEach(command => {
+                if (command.name === 'play-hn-audio') {
+                    shortcuts.hn = command.shortcut || 'Alt+W';
+                } else if (command.name === 'play-sg-audio') {
+                    shortcuts.sg = command.shortcut || 'Alt+D';
+                } else if (command.name === '_execute_action' || command.name === 'toggle-saola') {
+                    shortcuts.toggle = command.shortcut || 'Alt+A';
+                }
+            });
+            sendResponse({ success: true, shortcuts });
+        }).catch(error => {
+            sendResponse({ success: false, error: error.message });
+        });
+        return true; // Keep channel open for async response
+    }
 });
 
 chrome.commands.onCommand.addListener((command) => {

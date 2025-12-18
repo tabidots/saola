@@ -87,12 +87,12 @@
     font-size: 14px;
     font-weight: bold;
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: center;
     padding: 8px 0;
     gap: 5px;
     background-color: var(--soft-bg);
-    color: #666;
+    color: var(--soft-text-color);
     cursor: pointer;
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
@@ -111,7 +111,7 @@ kbd {
     display: inline-block;
     padding: 3px 6px;
     font-family: 'Menlo', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
-    font-size: 0.8em;
+    font-size: 0.9em;
     font-weight: 500;
     line-height: 1;
     color: var(--kbd-color);
@@ -186,17 +186,17 @@ kbd {
     color: var(--soft-bg);
 }
 
-ul.tags {
+.tags {
     list-style-type: none;
-    display: inline-flex;
+    display: inline;
     margin: 0;
     padding: 0;
 }
 
-li.tag {
+.tag {
     background: var(--border-color);
     color: var(--text-color);
-    padding: 0 4px;
+    padding: 2px 4px;
     border-radius: 4px;
     font-weight: 600;
     font-size: 12px;
