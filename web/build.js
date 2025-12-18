@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 
 const AUDIO_BASE_URL = 'https://pub-9ec168b9602247ec9a07b5964680de73.r2.dev';
 const AUDIO_VERSION = 'v1';
-const JS_VERSION = 'v6';
+const JS_VERSION = 'v7';
 const CSS_VERSION = 'v2';
 
 // Read your JS files

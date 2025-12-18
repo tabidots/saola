@@ -353,7 +353,7 @@
   }
   function tokenizeWithPositions(text) {
     const tokens = [];
-    const regex = /([\p{L}\p{M}\p{Nd}]+)|(\S)/gu;
+    const regex = /([\p{L}\p{M}\p{Nd}-]+)|(\S)/gu;
     let match;
     while ((match = regex.exec(text)) !== null) {
       const isWord = match[1] !== void 0;
@@ -439,7 +439,10 @@
           const startPos = phraseTokens[0].start;
           const endPos = phraseTokens[phraseTokens.length - 1].end;
           const rawText = normalizeVietnamese(text.substring(startPos, endPos));
-          const { found, frequency, canonical, primaryMatch, secondaryMatch } = this.getBestMatchingHeadword(rawText);
+          let { found, frequency, canonical, primaryMatch, secondaryMatch } = this.getBestMatchingHeadword(rawText);
+          if (!found && rawText.includes("-")) {
+            ({ found, frequency, canonical, primaryMatch, secondaryMatch } = this.getBestMatchingHeadword(rawText.replace(/-/g, " ")));
+          }
           if (!found && len > 1) continue;
           const newSegmentCount = best[i].segmentCount + 1;
           const newTotalFreq = best[i].totalFreq + frequency;
@@ -503,6 +506,7 @@
         });
         idx = bt.prevIndex;
       }
+      console.log("Segmented:", segments.map((s) => s.text).join(" | "));
       return this.mergeNameSegments(segments);
     }
     findSegmentAtPosition(segments, cursorPos) {

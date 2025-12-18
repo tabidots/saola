@@ -1,4 +1,5 @@
 import { getData } from './data-loader.js';
+import { escapeHtml } from '../../../shared/utils.js';
 
 export function segmentizeDictionaryWords(phrase, boldOffsets = []) {
     const { vnHeadwordSet } = getData();

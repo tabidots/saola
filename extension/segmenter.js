@@ -30,7 +30,7 @@ function normalizeVietnamese(text) {
 function tokenizeWithPositions(text) {
     const tokens = [];
     // Match words or single non-word characters
-    const regex = /([\p{L}\p{M}\p{Nd}]+)|(\S)/gu;
+    const regex = /([\p{L}\p{M}\p{Nd}-]+)|(\S)/gu;
     let match;
 
     while ((match = regex.exec(text)) !== null) {
@@ -143,7 +143,13 @@ export class TextSegmenter {
                 const rawText = normalizeVietnamese(text.substring(startPos, endPos));
 
                 // Check if phrase exists in dictionary (case-aware)
-                const { found, frequency, canonical, primaryMatch, secondaryMatch } = this.getBestMatchingHeadword(rawText);
+                let { found, frequency, canonical, primaryMatch, secondaryMatch } =
+                    this.getBestMatchingHeadword(rawText);
+
+                if (!found && rawText.includes('-')) {
+                    ({ found, frequency, canonical, primaryMatch, secondaryMatch } =
+                        this.getBestMatchingHeadword(rawText.replace(/-/g, ' ')));
+                }
 
                 // Allow single unknown words, but block multi-word unknowns
                 if (!found && len > 1) continue;
@@ -228,7 +234,7 @@ export class TextSegmenter {
             idx = bt.prevIndex;
         }
 
-        // console.log('Segmented:', segments.map(s => s.text).join(' | '));
+        console.log('Segmented:', segments.map(s => s.text).join(' | '));
         return this.mergeNameSegments(segments);
     }
 
