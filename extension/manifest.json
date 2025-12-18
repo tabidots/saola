@@ -44,7 +44,8 @@
         {
             "resources": [
                 "data/vnen.json.gz",
-                "img/*"
+                "img/*",
+                "popup.css"
             ],
             "matches": [
                 "<all_urls>"
@@ -54,8 +55,7 @@
     "permissions": [
         "storage",
         "activeTab",
-        "commands",
-        "notifications"
+        "commands"
     ],
     "commands": {
         "toggle-saola": {
@@ -64,6 +64,20 @@
                 "mac": "Alt+A"
             },
             "description": "Toggle SaoLa on/off"
+        },
+        "play-hn-audio": {
+            "suggested_key": {
+                "default": "Alt+W",
+                "mac": "Alt+W"
+            },
+            "description": "Play current word in Hanoi accent"
+        },
+        "play-sg-audio": {
+            "suggested_key": {
+                "default": "Alt+D",
+                "mac": "Alt+D"
+            },
+            "description": "Play current word in Saigon accent"
         }
     }
 }

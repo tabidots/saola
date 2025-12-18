@@ -1,0 +1,300 @@
+#saola-popup {
+    --background-color: #FFF;
+    --text-color: #333;
+    --soft-text-color: #666;
+    --dark-bg-text-color: #CCC;
+    --highlight: #D67AB1;
+    --faint-highlight: #E6AFD0;
+    --link: #119DA4;
+    --link-bg: #E3F2FD;
+    --soft-bg: #EEE;
+    --border-color: #DDD;
+    --modal-bg: #FFF;
+    --modal-overlay: rgba(0, 0, 0, 0.5);
+    --code-bg: #F5F5F5;
+
+    --kbd-color: #24292f;
+    --kbd-bg: #f6f8fa;
+    --kbd-border: #d0d7de;
+    --kbd-shadow: #d0d7de;
+
+    top: 0;
+    left: 0;
+    width: 400px;
+    margin: 20px 0 0 20px;
+    display: none;
+    line-height: 1.4;
+    flex-direction: column;
+    background: white;
+    border-radius: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 14px;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    transition: max-width 0.5s ease-in-out, height 0.5s ease-in-out;
+
+    h1, h2, h3, h4, p {
+        margin-bottom: 5px;
+    }
+    h1 {
+        font-weight: 800;
+        display: inline-flex;
+        gap: 5px;
+    }
+}
+
+#saola-popup:has(.audio-row) {
+    padding-top: 0px;
+}
+
+#saola-popup[data-theme="dark"] {
+    --background-color: #13171F;
+    --text-color: #e0e0e0;
+    --soft-text-color: #ccc;
+    --dark-bg-text-color: #888;
+    --highlight: #DE4D86;          /* Slightly lighter pink */
+    --faint-highlight: #f08a9b;    /* Muted dark pink background */
+    --link: #3599C4;               /* Brighter teal for visibility */
+    --link-bg: #364A63;            /* Dark teal background */
+    --soft-bg: #202632;            /* Slightly lighter than main bg */
+    --border-color: #444a53;       /* Subtle borders */
+    --modal-bg: #1C212D;           /* Dark blue-gray, lighter than background */
+    --modal-overlay: rgba(12, 15, 23, 0.9);  /* Dark blue overlay */
+    --code-bg: #2d2d2d;            /* Dark code blocks */
+
+    --kbd-color: #e6edf3;
+    --kbd-bg: #161b22;
+    --kbd-border: #30363d;
+    --kbd-shadow: #30363d;
+
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.audio-row {
+    display: grid;
+    align-items: baseline;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
+    width: 100%;
+    gap: 2px;
+}
+
+.audio-cell {
+    -webkit-tap-highlight-color: transparent;
+    padding: 5px 10px;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    gap: 5px;
+    background-color: var(--soft-bg);
+    color: #666;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.audio-cell.loading {
+    background-color: var(--faint-highlight);
+    color: #333;
+}
+
+.audio-cell.playing {
+    background-color: var(--faint-highlight);
+    color: #333;
+}
+
+kbd {
+    display: inline-block;
+    padding: 3px 6px;
+    font-family: 'Menlo', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.8em;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--kbd-color);
+    background-color: var(--kbd-bg);
+    border: 1px solid var(--kbd-border);
+    border-radius: 6px;
+    box-shadow: inset 0 -1px 0 var(--kbd-shadow);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.entries {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.audio-row + .entries {
+    padding-top: 10px;
+}
+
+.headword-row {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.pos-heading {
+    display: inline;
+    font-size: 12pt;
+    font-weight: 600;
+    font-variant: small-caps;
+    margin: 0;
+    color: var(--highlight);
+}
+
+.lexeme {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.senses {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    counter-reset: list-number;
+}
+
+.senses .sense {
+    display: inline;
+}
+
+.senses .sense:not(.single):before {
+    width: 15px;
+    height: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    background-color: var(--link);
+    border-radius: 50%;
+    counter-increment: list-number;
+    content: counter(list-number);
+    color: var(--soft-bg);
+}
+
+ul.tags {
+    list-style-type: none;
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+}
+
+li.tag {
+    background: var(--border-color);
+    color: var(--text-color);
+    padding: 0 4px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+li.tag:not(:last-child) {
+    margin-right: 4px;
+}
+
+.qualifiers {
+    font-style: italic;
+    color: #666;
+}
+
+.qualifiers:before {
+    content: "(";
+}
+
+.qualifiers:after {
+    content: ")";
+}
+
+.alt-spelling,
+.classifier {
+    color: #999;
+    font-style: normal;
+    font-weight: normal;
+    display: inline-block;
+}
+
+.alt-spelling strong {
+    color: var(--link);
+    font-style: normal;
+    font-size: 16px;
+}
+
+.rank-badge {
+    display: inline-block;
+    background: var(--highlight);
+    color: var(--background-color);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    align-self: center;
+}
+
+.rank-badge.general {
+    background: var(--faint-highlight);
+}
+
+.phonetic, .ipa {
+    font-size: 14px;
+    margin: 0px;
+    display: inline-block;
+
+    strong {
+        color: var(--highlight);
+    }
+}
+
+[data-pronunciation="off"] .phonetic,
+[data-pronunciation="off"] .ipa,
+[data-pronunciation="ipa"] .phonetic,
+[data-pronunciation="phonetic"] .ipa {
+    display: none;
+}
+
+[data-dialect="hn"] .sg,
+[data-dialect="sg"] .hn {
+    display: none;
+}
+
+/*
+Preamble from https://ellekasai.github.io/twemoji-awesome/,
+licensed under MIT: https://ellekasai.mit-license.org/
+*/
+
+.audio-icon:before {
+    content: url('img/1f508.svg');
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+    margin: 0 .05em 0 .1em;
+    vertical-align: -0.1em;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 1em 1em;
+    filter: drop-shadow(0px 0px 2px rgba(0, 0, 0, 0.9));
+}
+
+[data-theme="dark"] .audio-cell:not(.playing) .audio-icon:before {
+    filter: none;
+}
+
+.audio-cell.loading .audio-icon:before {
+    content: url('img/23f3.svg');
+}
+
+.audio-cell.playing .audio-icon:before {
+    content: url('img/1f50a.svg');
+}

@@ -1,4 +1,65 @@
-// Keyboard shortcut - toggle current tab
+let currentWord = null;
+let isMergedName = false;
+
+function arrayBufferToBase64(buffer) {
+    if (!buffer || buffer.byteLength === 0) {
+        console.log('❌ Empty buffer provided');
+        return '';
+    }
+
+    try {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunkSize = 32768; // Process in chunks to avoid long string concatenation
+
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode.apply(null, chunk);
+        }
+
+        const base64 = btoa(binary);
+        return base64;
+
+    } catch (error) {
+        console.log('❌ Base64 conversion failed:', error);
+        return '';
+    }
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'update-current-word') {
+        currentWord = message.word.toLowerCase();
+        isMergedName = message.isMergedName || false;
+    }
+
+    if (message.type === 'fetch-audio') {
+        const url = `https://pub-9ec168b9602247ec9a07b5964680de73.r2.dev/${message.filename}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.arrayBuffer();
+            })
+            .then(arrayBuffer => {
+                if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+                    throw new Error('Empty arrayBuffer received');
+                }
+                const base64String = arrayBufferToBase64(arrayBuffer);
+                sendResponse({
+                    success: true,
+                    data: base64String,
+                    size: arrayBuffer.byteLength
+                });
+            })
+            .catch(error => {
+                console.error('Audio fetch failed:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+
+        return true; // Keep channel open
+    }
+});
+
 chrome.commands.onCommand.addListener((command) => {
     if (command === 'toggle-saola') {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -17,7 +78,33 @@ chrome.commands.onCommand.addListener((command) => {
             }
         });
     }
-    // Handle audio commands later
+
+    if (!currentWord) {
+        return;
+    }
+
+    let dialect;
+    if (command === 'play-hn-audio') {
+        dialect = 'hn';
+    } else if (command === 'play-sg-audio') {
+        dialect = 'sg';
+    } else {
+        return;
+    }
+
+    // Send to content script
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]?.id) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                type: isMergedName ? 'play-audio-sequence' : 'play-audio',
+                word: currentWord,
+                dialect: dialect
+            }).catch(error => {
+                console.log('Content script not ready:', error.message);
+            });
+        }
+    });
+
 });
 
 // Track enabled state per tab

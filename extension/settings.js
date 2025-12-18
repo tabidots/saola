@@ -6,6 +6,7 @@ export class SettingsManager {
             pronunciation: 'phonetic',
             dialect: 'both'
         };
+        this.listeners = new Set(); // Store multiple listeners
     }
 
     async load() {
@@ -16,41 +17,58 @@ export class SettingsManager {
                 dialect: 'both'
             }, (items) => {
                 this.settings = items;
-                this.applyTheme();
+                this.notifyListeners(); // Notify all listeners
                 resolve(this.settings);
             });
         });
     }
 
-    applyTheme() {
-        const theme = this.settings.theme;
-
-        if (theme === 'system') {
-            // Detect system preference
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', theme);
-        }
-    }
-
-    onChanged(callback) {
-        chrome.runtime.onMessage.addListener((message) => {
-            if (message.action === 'settingsChanged') {
-                this.settings = message.settings;
-                this.applyTheme();
-                callback(this.settings);
-            }
-        });
-
-        // Also listen for system theme changes if theme is 'system'
-        if (this.settings.theme === 'system') {
-            window.matchMedia('(prefers-color-scheme: dark)')
-                .addEventListener('change', () => this.applyTheme());
-        }
+    getSettings() {
+        return { ...this.settings };
     }
 
     get(key) {
         return this.settings[key];
+    }
+
+    // New: Add event listener
+    onChanged(callback) {
+        this.listeners.add(callback);
+
+        // Also listen for messages from options page
+        chrome.runtime.onMessage.addListener((message) => {
+            if (message.action === 'settingsChanged') {
+                this.settings = message.settings;
+                this.notifyListeners();
+            }
+        });
+
+        // Listen for system theme changes
+        const handleSystemThemeChange = () => {
+            if (this.settings.theme === 'system') {
+                this.notifyListeners(); // Just notify, PopupManager will re-apply
+            }
+        };
+
+        window.matchMedia('(prefers-color-scheme: dark)')
+            .addEventListener('change', handleSystemThemeChange);
+
+        // Return unsubscribe function
+        return () => {
+            this.listeners.delete(callback);
+            window.matchMedia('(prefers-color-scheme: dark)')
+                .removeEventListener('change', handleSystemThemeChange);
+        };
+    }
+
+    // New: Notify all listeners
+    notifyListeners() {
+        this.listeners.forEach(callback => {
+            try {
+                callback(this.settings);
+            } catch (error) {
+                console.error('Settings listener error:', error);
+            }
+        });
     }
 }

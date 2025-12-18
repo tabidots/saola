@@ -1,13 +1,27 @@
-// Load saved settings
-chrome.storage.sync.get({
-    theme: 'system',
-    pronunciation: 'phonetic',
-    dialect: 'both'
-}, (items) => {
-    document.getElementById('theme').value = items.theme;
-    document.getElementById('pronunciation').value = items.pronunciation;
-    document.getElementById('dialect').value = items.dialect;
+document.addEventListener('DOMContentLoaded', () => {
+    refreshOptions();
+
+    // Also refresh when tab becomes visible
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            refreshOptions();
+        }
+    });
 });
+
+function refreshOptions() {
+    chrome.storage.sync.get({
+        theme: 'system',
+        pronunciation: 'phonetic',
+        dialect: 'both'
+    }, (items) => {
+        // Update UI even if values didn't change
+        document.getElementById('theme').value = items.theme;
+        document.getElementById('pronunciation').value = items.pronunciation;
+        document.getElementById('dialect').value = items.dialect;
+        console.log('Options refreshed:', items);
+    });
+}
 
 // Save on change
 function saveSettings() {

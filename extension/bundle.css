@@ -1,0 +1,206 @@
+/* popup.css */
+#saola-popup {
+  --saola-background-color: #FFF;
+  --saola-text-color: #333;
+  --saola-soft-text-color: #666;
+  --saola-dark-bg-text-color: #CCC;
+  --saola-highlight: #D67AB1;
+  --saola-faint-highlight: #E6AFD0;
+  --saola-link: #119DA4;
+  --saola-link-bg: #E3F2FD;
+  --saola-soft-bg: #EEE;
+  --saola-border-color: #DDD;
+  --saola-modal-bg: #FFF;
+  --saola-modal-overlay: rgba(0, 0, 0, 0.5);
+  --saola-code-bg: #F5F5F5;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 400px;
+  margin: 20px 0 0 20px;
+  padding: 20px;
+  display: none;
+  line-height: 1.4;
+  flex-direction: column;
+  gap: 5px;
+  background: white;
+  border-radius: 10px;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Roboto",
+    sans-serif;
+  font-size: 14px;
+  background-color: var(--saola-background-color);
+  color: var(--saola-text-color);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  transition: max-width 0.5s ease-in-out, height 0.5s ease-in-out;
+  h1,
+  h2,
+  h3,
+  h4,
+  p {
+    margin-bottom: 5px;
+  }
+  h1 {
+    font-weight: 800;
+    display: inline-flex;
+    gap: 5px;
+  }
+}
+[data-theme=dark] #saola-popup {
+  --saola-background-color: #13171F;
+  --saola-text-color: #e0e0e0;
+  --saola-soft-text-color: #ccc;
+  --saola-dark-bg-text-color: #888;
+  --saola-highlight: #DE4D86;
+  --saola-faint-highlight: #f08a9b;
+  --saola-link: #3599C4;
+  --saola-link-bg: #364A63;
+  --saola-soft-bg: #202632;
+  --saola-border-color: #444a53;
+  --saola-modal-bg: #1C212D;
+  --saola-modal-overlay: rgba(12, 15, 23, 0.9);
+  --saola-code-bg: #2d2d2d;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+.headword-row {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+button.audio-button {
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 16px;
+  padding: 5px 10px;
+  font-size: 14px;
+  font-weight: bold;
+  background-color: var(--saola-soft-bg);
+  color: #666;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+button.audio-button:active {
+  color: var(--saola-highlight);
+}
+button.audio-button:disabled {
+  cursor: not-allowed;
+}
+button.audio-button.playing {
+  background-color: var(--saola-faint-highlight);
+  color: #333;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+.pos-heading {
+  display: inline;
+  font-size: 12pt;
+  font-weight: 600;
+  font-variant: small-caps;
+  margin: 0;
+  color: var(--saola-highlight);
+}
+.lexeme {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.senses {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  counter-reset: list-number;
+}
+.senses .sense {
+  display: inline;
+}
+.senses .sense:not(.single):before {
+  width: 15px;
+  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: var(--saola-link);
+  border-radius: 50%;
+  counter-increment: list-number;
+  content: counter(list-number);
+  color: var(--saola-soft-bg);
+}
+ul.tags {
+  list-style-type: none;
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+}
+li.tag {
+  background: var(--saola-border-color);
+  color: var(--saola-text-color);
+  padding: 0 4px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+}
+li.tag:not(:last-child) {
+  margin-right: 4px;
+}
+.qualifiers {
+  font-style: italic;
+  color: #666;
+}
+.qualifiers:before {
+  content: "(";
+}
+.qualifiers:after {
+  content: ")";
+}
+.alt-spelling,
+.classifier {
+  color: #999;
+  font-style: normal;
+  font-weight: normal;
+  display: inline-block;
+}
+.alt-spelling strong {
+  color: var(--saola-link);
+  font-style: normal;
+  font-size: 16px;
+}
+.rank-badge {
+  display: inline-block;
+  background: var(--saola-highlight);
+  color: var(--saola-background-color);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  align-self: center;
+}
+.rank-badge.general {
+  background: var(--saola-faint-highlight);
+}
+.phonetic,
+.ipa {
+  color: var(--saola-highlight);
+  font-size: 14px;
+  margin: 0px;
+  display: inline-block;
+}
+[data-pronunciation=off] .phonetic,
+[data-pronunciation=off] .ipa,
+[data-pronunciation=ipa] .phonetic,
+[data-pronunciation=phonetic] .ipa {
+  display: none;
+}
+[data-dialect=hn] .sg,
+[data-dialect=sg] .hn {
+  display: none;
+}
+[data-theme=dark] button.audio-button:not(.playing) .audio-icon:before {
+  filter: none;
+}

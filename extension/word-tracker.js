@@ -46,7 +46,7 @@ export class WordTracker {
         return false;
     }
 
-    handleMouseMove(e) {
+    async handleMouseMove(e) {
         if (!this.enabled) return;
 
         this.lastMouseEvent = e;
@@ -101,12 +101,29 @@ export class WordTracker {
         }
         this.updateCurrentWord(container, segment, e);
         
-        const matches = [segment.primaryEntry, segment.secondaryEntry].filter(Boolean);
-        if (!matches.length) return;
+        if (!segment.entries.length) return;
+
+        // Initialize AudioContext on first mouse move
+        if (this.popupManager?.audioPlayer) {
+            await this.popupManager.audioPlayer.initializeWithGesture();
+        }
+
+        try {
+            chrome.runtime.sendMessage({
+                type: 'update-current-word',
+                word: segment.hasAudio ? segment.text : "",
+                isMergedName: segment.isMergedName
+            });
+        } catch (error) {
+            // Silently ignore "extension context invalidated" errors
+            if (!error.message.includes('Extension context invalidated')) {
+                console.warn('Failed to send message:', error);
+            }
+        }
 
         this.highlightOverlay.clearAll();
         this.highlightOverlay.highlightWord(container, segment.start, segment.end);
-        this.popupManager.show(matches, event.clientX, event.clientY);
+        this.popupManager.show(segment, event.clientX, event.clientY);
     }
 
     handleMouseLeave() {

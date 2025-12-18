@@ -1,6 +1,6 @@
-import { linkifyFromList, linkifySegments, boldify } from './utils.js';
+import { linkifyFromList, boldify } from './utils.js';
 
-export function registerHandlebarsHelpers(segmenter = null) {
+export function registerHandlebarsHelpers(webAppFunctions = null) {
     Handlebars.registerHelper('join', function (array, separator) {
         return array ? array.join(separator) : '';
     });
@@ -15,14 +15,14 @@ export function registerHandlebarsHelpers(segmenter = null) {
 
 
     Handlebars.registerHelper('linkify', function (text, offsets) {
-        if (!segmenter) {
+        if (!webAppFunctions) {
             // Extension path: just return text wrapped in SafeString
             return new Handlebars.SafeString(text);
         }
         // Web app path: full linkification
         const realOffsets = Array.isArray(offsets) ? offsets : [];
-        const segs = segmenter(text, realOffsets);
-        return new Handlebars.SafeString(linkifySegments(segs));
+        const segs = webAppFunctions.segmentize(text, realOffsets);
+        return new Handlebars.SafeString(webAppFunctions.linkify(segs));
     });
 
     Handlebars.registerHelper('boldify', function (text, offsets) {
@@ -41,7 +41,7 @@ export function registerHandlebarsHelpers(segmenter = null) {
         const filename = `${word.toLowerCase().replace(/\s+/g, '-')}-${dialect}.mp3`;
         return `
             <button class="audio-button" data-filename="${filename}" 
-            data-dialect="${dialect.toUpperCase()}">
+            data-dialect="${dialect}">
                 <span class="audio-icon"><i class="twa twa-speaker-low-volume"></i></span> 
                 ${dialect.toUpperCase()}
             </button>

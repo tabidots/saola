@@ -3,7 +3,7 @@ import { loadGzipJson } from '../shared/utils.js';
 // data-loader.js
 const data = {
     vnEn: [],
-    vnIndex: null
+    lowercaseIndex: null
 };
 
 export async function initializeData() {
