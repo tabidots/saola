@@ -112,12 +112,13 @@
   }
 
   // data-loader.js
+  var DATA_VERSION = "v11";
   var data = {
     vnEn: [],
     lowercaseIndex: null
   };
   async function initializeData() {
-    const dataUrl = chrome.runtime.getURL("data/vnen.json.gz");
+    const dataUrl = chrome.runtime.getURL(`data/vnen.json.gz?v=${DATA_VERSION}`);
     data.vnEn = await loadGzipJson(dataUrl);
     data.lowercaseIndex = /* @__PURE__ */ new Map();
     data.vnEn.forEach((entry, idx) => {

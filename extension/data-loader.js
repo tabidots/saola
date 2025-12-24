@@ -1,5 +1,7 @@
 import { loadGzipJson } from '../shared/utils.js';
 
+const DATA_VERSION = 'v11';
+
 // data-loader.js
 const data = {
     vnEn: [],
@@ -7,7 +9,7 @@ const data = {
 };
 
 export async function initializeData() {
-    const dataUrl = chrome.runtime.getURL('data/vnen.json.gz');
+    const dataUrl = chrome.runtime.getURL(`data/vnen.json.gz?v=${DATA_VERSION}`);
     data.vnEn = await loadGzipJson(dataUrl);
 
     // For segmentation: lowercase -> Set of {canonical, frequency, indices} objects
