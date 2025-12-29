@@ -4,6 +4,7 @@ export class HighlightOverlay {
         this.currentHighlights = [];
 
         this.initOverlay();
+        this.watchForRemoval();
     }
 
     initOverlay() {
@@ -19,6 +20,24 @@ export class HighlightOverlay {
             z-index: 10000;
         `;
         document.body.appendChild(this.overlay);
+    }
+
+    watchForRemoval() {
+        // Re-inject popup if DOM is rehydrated (Next.js, etc)
+        // (Usually the highlighter is fine, compared to the popup, but JIC...)
+        const observer = new MutationObserver((mutations) => {
+            const overlay = document.getElementById('saola-overlay');
+
+            if (!overlay) {
+                this.initOverlay();
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: false
+        });
     }
 
     highlightWord(container, start, end, color = 'rgba(255, 255, 0, 0.3)') {

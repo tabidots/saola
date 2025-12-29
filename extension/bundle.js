@@ -112,7 +112,7 @@
   }
 
   // data-loader.js
-  var DATA_VERSION = "v11";
+  var DATA_VERSION = "v12";
   var data = {
     vnEn: [],
     lowercaseIndex: null
@@ -205,6 +205,7 @@
       this.overlay = null;
       this.currentHighlights = [];
       this.initOverlay();
+      this.watchForRemoval();
     }
     initOverlay() {
       this.overlay = document.createElement("div");
@@ -219,6 +220,19 @@
             z-index: 10000;
         `;
       document.body.appendChild(this.overlay);
+    }
+    watchForRemoval() {
+      const observer = new MutationObserver((mutations) => {
+        const overlay = document.getElementById("saola-overlay");
+        if (!overlay) {
+          this.initOverlay();
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: false
+      });
     }
     highlightWord(container, start, end, color = "rgba(255, 255, 0, 0.3)") {
       this.clearAll();
@@ -507,7 +521,6 @@
         });
         idx = bt.prevIndex;
       }
-      console.log("Segmented:", segments.map((s) => s.text).join(" | "));
       return this.mergeNameSegments(segments);
     }
     findSegmentAtPosition(segments, cursorPos) {
@@ -757,7 +770,21 @@
       await this.createShadowPopup();
       await this.loadShortcuts();
       this.setupSettingsListener();
+      this.watchForRemoval();
       return this;
+    }
+    watchForRemoval() {
+      const observer = new MutationObserver((mutations) => {
+        const container = document.getElementById("saola-popup-container");
+        if (!container) {
+          this.init();
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: false
+      });
     }
     async createShadowPopup() {
       const container = document.createElement("div");

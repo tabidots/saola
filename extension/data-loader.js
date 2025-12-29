@@ -1,6 +1,6 @@
 import { loadGzipJson } from '../shared/utils.js';
 
-const DATA_VERSION = 'v11';
+const DATA_VERSION = 'v12';
 
 // data-loader.js
 const data = {

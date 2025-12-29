@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "SaoLa Popup Dictionary",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "author": "Justin Douglas",
     "description": "Vietnamese-English popup dictionary",
     "background": {

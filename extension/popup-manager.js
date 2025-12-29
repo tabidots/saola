@@ -13,7 +13,25 @@ export class PopupManager {
         await this.createShadowPopup();
         await this.loadShortcuts();
         this.setupSettingsListener();
+        this.watchForRemoval();
         return this;
+    }
+
+    watchForRemoval() {
+        // Re-inject popup if DOM is rehydrated (Next.js, etc)
+        const observer = new MutationObserver((mutations) => {
+            const container = document.getElementById('saola-popup-container');
+            
+            if (!container) {
+                this.init();
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: false
+        });
     }
 
 
