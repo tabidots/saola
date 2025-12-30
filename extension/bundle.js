@@ -1124,6 +1124,13 @@
       const wordTracker = new WordTracker(popupManager);
       wordTracker.start();
       const audioPlayer = new AudioPlayer();
+      chrome.runtime.sendMessage({ action: "getState" }, (response) => {
+        if (response && response.enabled === false) {
+          wordTracker.disable();
+        } else {
+          wordTracker.start();
+        }
+      });
       chrome.runtime.onMessage.addListener((message) => {
         if (message.action === "setEnabled") {
           if (message.enabled) {

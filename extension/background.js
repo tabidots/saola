@@ -27,6 +27,15 @@ function arrayBufferToBase64(buffer) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    
+    if (message.action === 'getState' && sender.tab) {
+        console.log("Getting state for tab:", sender.tab.id);
+        const enabled = tabStates.get(sender.tab.id) ?? true; // Default enabled
+        sendResponse({ enabled: enabled });
+        updateIcon(sender.tab.id);
+        return true; // Keep message channel open for async response
+    }
+
     if (message.type === 'update-current-word') {
         currentWord = message.word.toLowerCase();
         isMergedName = message.isMergedName || false;

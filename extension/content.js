@@ -20,6 +20,15 @@ async function init() {
         wordTracker.start();
 
         const audioPlayer = new AudioPlayer();
+        
+        // Ask background for this tab's state
+        chrome.runtime.sendMessage({ action: 'getState' }, (response) => {
+            if (response && response.enabled === false) {
+                wordTracker.disable();
+            } else {
+                wordTracker.start(); // Start enabled by default
+            }
+        });
 
         chrome.runtime.onMessage.addListener((message) => {
             if (message.action === 'setEnabled') {
