@@ -26,14 +26,34 @@ function arrayBufferToBase64(buffer) {
     }
 }
 
+// Persist tab states to storage
+async function getTabState(tabId) {
+    const result = await chrome.storage.local.get(`tab_${tabId}`);
+    return result[`tab_${tabId}`] ?? true; // Default enabled
+}
+
+async function setTabState(tabId, enabled) {
+    await chrome.storage.local.set({ [`tab_${tabId}`]: enabled });
+}
+
+async function deleteTabState(tabId) {
+    await chrome.storage.local.remove(`tab_${tabId}`);
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     if (message.action === 'getState' && sender.tab) {
-        console.log("Getting state for tab:", sender.tab.id);
-        const enabled = tabStates.get(sender.tab.id) ?? true; // Default enabled
-        sendResponse({ enabled: enabled });
-        updateIcon(sender.tab.id);
-        return true; // Keep message channel open for async response
+        // Check if tab still exists before responding
+        chrome.tabs.get(sender.tab.id).then(() => {
+            getTabState(sender.tab.id).then(enabled => {
+                sendResponse({ enabled: enabled });
+                updateIcon(sender.tab.id);
+            });
+        }).catch(() => {
+            // Tab doesn't exist, don't respond
+            console.log('Tab no longer exists:', sender.tab.id);
+        });
+        return true; // Keep channel open
     }
 
     if (message.type === 'update-current-word') {
@@ -88,23 +108,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(async (command) => {
     if (command === 'toggle-saola') {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs[0]) {
-                const tab = tabs[0];
-                const currentState = tabStates.get(tab.id) ?? true;
-                const newState = !currentState;
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tabs[0]) {
+            const tab = tabs[0];
+            const currentState = await getTabState(tab.id);
+            const newState = !currentState;
 
-                tabStates.set(tab.id, newState);
-                updateIcon(tab.id);
+            await setTabState(tab.id, newState);
+            updateIcon(tab.id);
 
-                chrome.tabs.sendMessage(tab.id, {
-                    action: 'setEnabled',
-                    enabled: newState
-                });
-            }
-        });
+            chrome.tabs.sendMessage(tab.id, {
+                action: 'setEnabled',
+                enabled: newState
+            }).catch(() => { });
+        }
     }
 
     if (!currentWord) {
@@ -160,42 +179,46 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 });
 
 // Listen for clicks on the extension icon
-chrome.action.onClicked.addListener((tab) => {
-    const currentState = tabStates.get(tab.id) ?? true; // Default to enabled
+chrome.action.onClicked.addListener(async (tab) => {
+    const currentState = await getTabState(tab.id);
     const newState = !currentState;
 
-    tabStates.set(tab.id, newState);
+    await setTabState(tab.id, newState);
     updateIcon(tab.id);
 
-    // Send message to content script
     chrome.tabs.sendMessage(tab.id, {
         action: 'setEnabled',
         enabled: newState
-    }).catch(() => {
-        console.log('Content script not loaded yet in tab', tab.id);
-    });
+    }).catch(() => { });
 });
 
 // Clean up when tab is closed
 chrome.tabs.onRemoved.addListener((tabId) => {
-    tabStates.delete(tabId);
+    deleteTabState(tabId);
 });
 
-function updateIcon(tabId) {
-    const enabled = tabStates.get(tabId) ?? true;
+async function updateIcon(tabId) {
+    try {
+        // Verify tab exists first
+        await chrome.tabs.get(tabId);
 
-    chrome.action.setIcon({
-        tabId: tabId,
-        path: {
-            "16": enabled ? "img/icon-16.png" : "img/icon-16-off.png",
-            "48": enabled ? "img/icon-48.png" : "img/icon-48-off.png",
-            "128": enabled ? "img/icon-128.png" : "img/icon-128-off.png"
-        }
-    });
+        const enabled = await getTabState(tabId);
 
-    // Optional: Update tooltip
-    chrome.action.setTitle({
-        tabId: tabId,
-        title: enabled ? "SaoLa (Active)" : "SaoLa (Disabled)"
-    });
+        await chrome.action.setIcon({
+            tabId: tabId,
+            path: {
+                "16": enabled ? "icon/icon16.png" : "icon/icon16-off.png",
+                "48": enabled ? "icon/icon48.png" : "icon/icon48-off.png",
+                "128": enabled ? "icon/icon128.png" : "icon/icon128-off.png"
+            }
+        });
+
+        await chrome.action.setTitle({
+            tabId: tabId,
+            title: enabled ? "Saola (Active)" : "Saola (Disabled)"
+        });
+    } catch (error) {
+        // Tab doesn't exist, ignore
+        console.log('Cannot update icon, tab does not exist:', tabId);
+    }
 }
