@@ -207,9 +207,9 @@ async function updateIcon(tabId) {
         await chrome.action.setIcon({
             tabId: tabId,
             path: {
-                "16": enabled ? "icon/icon16.png" : "icon/icon16-off.png",
-                "48": enabled ? "icon/icon48.png" : "icon/icon48-off.png",
-                "128": enabled ? "icon/icon128.png" : "icon/icon128-off.png"
+                "16": enabled ? "img/icon-16.png" : "img/icon-16-off.png",
+                "48": enabled ? "img/icon-48.png" : "img/icon-48-off.png",
+                "128": enabled ? "img/icon-128.png" : "img/icon-128-off.png"
             }
         });
 
