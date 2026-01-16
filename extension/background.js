@@ -29,7 +29,7 @@ function arrayBufferToBase64(buffer) {
 // Persist tab states to storage
 async function getTabState(tabId) {
     const result = await chrome.storage.local.get(`tab_${tabId}`);
-    return result[`tab_${tabId}`] ?? true; // Default enabled
+    return result[`tab_${tabId}`] ?? false; // Default disabled
 }
 
 async function setTabState(tabId, enabled) {
@@ -93,9 +93,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             const shortcuts = {};
             commands.forEach(command => {
                 if (command.name === 'play-hn-audio') {
-                    shortcuts.hn = command.shortcut || 'Alt+W';
+                    shortcuts.hn = command.shortcut || 'Alt+1';
                 } else if (command.name === 'play-sg-audio') {
-                    shortcuts.sg = command.shortcut || 'Alt+D';
+                    shortcuts.sg = command.shortcut || 'Alt+2';
                 } else if (command.name === '_execute_action' || command.name === 'toggle-saola') {
                     shortcuts.toggle = command.shortcut || 'Alt+A';
                 }

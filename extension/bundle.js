@@ -204,6 +204,7 @@
     constructor() {
       this.overlay = null;
       this.currentHighlights = [];
+      this.range = document.createRange();
       this.initOverlay();
       this.watchForRemoval();
     }
@@ -237,10 +238,9 @@
     highlightWord(container, start, end, color = "rgba(255, 255, 0, 0.3)") {
       this.clearAll();
       try {
-        const range = document.createRange();
-        range.setStart(container, start);
-        range.setEnd(container, end);
-        const rects = range.getClientRects();
+        this.range.setStart(container, start);
+        this.range.setEnd(container, end);
+        const rects = this.range.getClientRects();
         for (const rect of rects) {
           if (rect.width === 0 || rect.height === 0) continue;
           const highlight = document.createElement("div");
@@ -647,16 +647,11 @@
     start() {
       document.addEventListener("mousemove", this.handleMouseMove);
       document.addEventListener("mouseleave", this.handleMouseLeave);
+      this.enabled = true;
     }
     stop() {
       document.removeEventListener("mousemove", this.handleMouseMove);
       document.removeEventListener("mouseleave", this.handleMouseLeave);
-      this.cleanup();
-    }
-    enable() {
-      this.enabled = true;
-    }
-    disable() {
       this.enabled = false;
       this.cleanup();
     }
@@ -761,9 +756,9 @@
       this.margin = 10;
       this.popup = null;
       this.shortcuts = {
-        hn: "Alt+W",
+        hn: "Alt+1",
         // Default fallbacks
-        sg: "Alt+D"
+        sg: "Alt+2"
       };
     }
     async init() {
@@ -1122,21 +1117,19 @@
       const popupManager = new PopupManager(settingsManager);
       await popupManager.init();
       const wordTracker = new WordTracker(popupManager);
-      wordTracker.start();
       const audioPlayer = new AudioPlayer();
       chrome.runtime.sendMessage({ action: "getState" }, (response) => {
-        if (response && response.enabled === false) {
-          wordTracker.disable();
-        } else {
+        if (response && response.enabled === true) {
           wordTracker.start();
         }
       });
       chrome.runtime.onMessage.addListener((message) => {
+        console.trace("REGISTER MESSAGE LISTENER");
         if (message.action === "setEnabled") {
           if (message.enabled) {
-            wordTracker.enable();
+            wordTracker.start();
           } else {
-            wordTracker.disable();
+            wordTracker.stop();
           }
           console.log("Extension", message.enabled ? "enabled" : "disabled");
         } else if (message.type === "play-audio") {

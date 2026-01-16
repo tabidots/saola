@@ -17,25 +17,22 @@ async function init() {
         await popupManager.init();
         
         const wordTracker = new WordTracker(popupManager);
-        wordTracker.start();
-
+        
         const audioPlayer = new AudioPlayer();
         
         // Ask background for this tab's state
         chrome.runtime.sendMessage({ action: 'getState' }, (response) => {
-            if (response && response.enabled === false) {
-                wordTracker.disable();
-            } else {
-                wordTracker.start(); // Start enabled by default
+            if (response && response.enabled === true) {
+                wordTracker.start();
             }
         });
 
         chrome.runtime.onMessage.addListener((message) => {
             if (message.action === 'setEnabled') {
                 if (message.enabled) {
-                    wordTracker.enable();
+                    wordTracker.start();
                 } else {
-                    wordTracker.disable();
+                    wordTracker.stop();
                 }
                 console.log('Extension', message.enabled ? 'enabled' : 'disabled');
             } else if (message.type === 'play-audio') {

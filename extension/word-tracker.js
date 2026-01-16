@@ -22,19 +22,12 @@ export class WordTracker {
     start() {
         document.addEventListener('mousemove', this.handleMouseMove);
         document.addEventListener('mouseleave', this.handleMouseLeave);
+        this.enabled = true;
     }
 
     stop() {
         document.removeEventListener('mousemove', this.handleMouseMove);
         document.removeEventListener('mouseleave', this.handleMouseLeave);
-        this.cleanup();
-    }
-
-    enable() {
-        this.enabled = true;
-    }
-
-    disable() {
         this.enabled = false;
         this.cleanup();
     }

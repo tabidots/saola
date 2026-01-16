@@ -2,6 +2,7 @@ export class HighlightOverlay {
     constructor() {
         this.overlay = null;
         this.currentHighlights = [];
+        this.range = document.createRange();
 
         this.initOverlay();
         this.watchForRemoval();
@@ -44,11 +45,10 @@ export class HighlightOverlay {
         this.clearAll();
 
         try {
-            const range = document.createRange();
-            range.setStart(container, start);
-            range.setEnd(container, end);
+            this.range.setStart(container, start);
+            this.range.setEnd(container, end);
 
-            const rects = range.getClientRects();
+            const rects = this.range.getClientRects();
 
             for (const rect of rects) {
                 if (rect.width === 0 || rect.height === 0) continue;

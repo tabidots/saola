@@ -4,8 +4,8 @@ export class PopupManager {
         this.margin = 10;
         this.popup = null; // Initialize as null
         this.shortcuts = {
-            hn: "Alt+W", // Default fallbacks
-            sg: "Alt+D"
+            hn: "Alt+1", // Default fallbacks
+            sg: "Alt+2"
         };
     }
 
