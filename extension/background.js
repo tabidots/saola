@@ -228,7 +228,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]?.id) {
             chrome.tabs.sendMessage(tabs[0].id, {
-                type: isMergedName ? 'play-audio-sequence' : 'play-audio',
+                type: isMergedName ? 'play-saola-audio-sequence' : 'play-saola-audio',
                 word: currentWord,
                 dialect: dialect
             }).catch(error => {
