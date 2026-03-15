@@ -169,6 +169,7 @@ kbd {
 
 .senses .sense {
     display: inline;
+    line-height: 1.6;
 }
 
 .senses .sense:not(.single):before {

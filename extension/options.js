@@ -48,7 +48,7 @@ function saveSettings() {
         chrome.tabs.query({}, (tabs) => {
             tabs.forEach(tab => {
                 chrome.tabs.sendMessage(tab.id, {
-                    action: 'settingsChanged',
+                    action: 'saolaSettingsChanged',
                     settings: settings
                 }).catch(() => { }); // Ignore errors for tabs without content script
             });

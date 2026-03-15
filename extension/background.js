@@ -28,21 +28,21 @@ function arrayBufferToBase64(buffer) {
 
 // Persist tab states to storage
 async function getTabState(tabId) {
-    const result = await chrome.storage.local.get(`tab_${tabId}`);
-    return result[`tab_${tabId}`] ?? false; // Default disabled
+    const result = await chrome.storage.local.get(`saola_tab_${tabId}`);
+    return result[`saola_tab_${tabId}`] ?? false; // Default disabled
 }
 
 async function setTabState(tabId, enabled) {
-    await chrome.storage.local.set({ [`tab_${tabId}`]: enabled });
+    await chrome.storage.local.set({ [`saola_tab_${tabId}`]: enabled });
 }
 
 async function deleteTabState(tabId) {
-    await chrome.storage.local.remove(`tab_${tabId}`);
+    await chrome.storage.local.remove(`saola_tab_${tabId}`);
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
-    if (message.action === 'getState' && sender.tab) {
+    if (message.action === 'getSaolaState' && sender.tab) {
         // Check if tab still exists before responding
         chrome.tabs.get(sender.tab.id).then(() => {
             getTabState(sender.tab.id).then(enabled => {
@@ -88,7 +88,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return true; // Keep channel open
     }
 
-    if (message.type === 'get-shortcuts') {
+    if (message.type === 'get-saola-shortcuts') {
         chrome.commands.getAll().then(commands => {
             const shortcuts = {};
             commands.forEach(command => {
@@ -106,6 +106,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
         return true; // Keep channel open for async response
     }
+
+    // If message not recognized, don't respond
+    return false; 
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
@@ -120,7 +123,7 @@ chrome.commands.onCommand.addListener(async (command) => {
             updateIcon(tab.id);
 
             chrome.tabs.sendMessage(tab.id, {
-                action: 'setEnabled',
+                action: 'enableSaola',
                 enabled: newState
             }).catch(() => { });
         }
@@ -187,7 +190,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     updateIcon(tab.id);
 
     chrome.tabs.sendMessage(tab.id, {
-        action: 'setEnabled',
+        action: 'enableSaola',
         enabled: newState
     }).catch(() => { });
 });

@@ -21,20 +21,20 @@ async function init() {
         const audioPlayer = new AudioPlayer();
         
         // Ask background for this tab's state
-        chrome.runtime.sendMessage({ action: 'getState' }, (response) => {
+        chrome.runtime.sendMessage({ action: 'getSaolaState' }, (response) => {
             if (response && response.enabled === true) {
                 wordTracker.start();
             }
         });
 
         chrome.runtime.onMessage.addListener((message) => {
-            if (message.action === 'setEnabled') {
+            if (message.action === 'enableSaola') {
                 if (message.enabled) {
                     wordTracker.start();
                 } else {
                     wordTracker.stop();
                 }
-                console.log('Extension', message.enabled ? 'enabled' : 'disabled');
+                // console.log('Saola extension', message.enabled ? 'enabled' : 'disabled');
             } else if (message.type === 'play-audio') {
                 const audioElement = popupManager.popup.querySelector(`.audio-cell-${message.dialect}`);
                 audioPlayer.playAudio(message.word, message.dialect, audioElement);

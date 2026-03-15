@@ -95,7 +95,10 @@ export class WordTracker {
         }
         this.updateCurrentWord(container, segment, e);
         
-        if (!segment.entries.length) return;
+        if (!segment.entries.length) {
+            this.cleanup();
+            return;
+        };
 
         // Initialize AudioContext on first mouse move
         if (this.popupManager?.audioPlayer) {

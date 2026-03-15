@@ -699,7 +699,11 @@
         return;
       }
       this.updateCurrentWord(container, segment, e);
-      if (!segment.entries.length) return;
+      if (!segment.entries.length) {
+        this.cleanup();
+        return;
+      }
+      ;
       if (this.popupManager?.audioPlayer) {
         await this.popupManager.audioPlayer.initializeWithGesture();
       }
@@ -806,7 +810,7 @@
     async loadShortcuts() {
       try {
         const response = await chrome.runtime.sendMessage({
-          type: "get-shortcuts"
+          type: "get-saola-shortcuts"
         });
         if (response.success) {
           this.shortcuts = response.shortcuts;
@@ -900,7 +904,7 @@
     onChanged(callback) {
       this.listeners.add(callback);
       chrome.runtime.onMessage.addListener((message) => {
-        if (message.action === "settingsChanged") {
+        if (message.action === "saolaSettingsChanged") {
           this.settings = message.settings;
           this.notifyListeners();
         }
@@ -1118,20 +1122,18 @@
       await popupManager.init();
       const wordTracker = new WordTracker(popupManager);
       const audioPlayer = new AudioPlayer();
-      chrome.runtime.sendMessage({ action: "getState" }, (response) => {
+      chrome.runtime.sendMessage({ action: "getSaolaState" }, (response) => {
         if (response && response.enabled === true) {
           wordTracker.start();
         }
       });
       chrome.runtime.onMessage.addListener((message) => {
-        console.trace("REGISTER MESSAGE LISTENER");
-        if (message.action === "setEnabled") {
+        if (message.action === "enableSaola") {
           if (message.enabled) {
             wordTracker.start();
           } else {
             wordTracker.stop();
           }
-          console.log("Extension", message.enabled ? "enabled" : "disabled");
         } else if (message.type === "play-audio") {
           const audioElement = popupManager.popup.querySelector(`.audio-cell-${message.dialect}`);
           audioPlayer.playAudio(message.word, message.dialect, audioElement);

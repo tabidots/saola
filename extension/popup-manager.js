@@ -72,7 +72,7 @@ export class PopupManager {
     async loadShortcuts() {
         try {
             const response = await chrome.runtime.sendMessage({
-                type: 'get-shortcuts'
+                type: 'get-saola-shortcuts'
             });
 
             if (response.success) {

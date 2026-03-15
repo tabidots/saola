@@ -37,7 +37,7 @@ export class SettingsManager {
 
         // Also listen for messages from options page
         chrome.runtime.onMessage.addListener((message) => {
-            if (message.action === 'settingsChanged') {
+            if (message.action === 'saolaSettingsChanged') {
                 this.settings = message.settings;
                 this.notifyListeners();
             }
