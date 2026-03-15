@@ -50,6 +50,7 @@ export async function initializeData() {
 }
 
 export function getData() {
+    return data;
     return { 
         vnEn: data.vnEn, 
         lowercaseIndex: data.lowercaseIndex

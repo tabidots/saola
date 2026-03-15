@@ -149,6 +149,7 @@
     });
   }
   function getData() {
+    return data;
     return {
       vnEn: data.vnEn,
       lowercaseIndex: data.lowercaseIndex
@@ -631,8 +632,8 @@
 
   // word-tracker.js
   var WordTracker = class {
-    constructor(popupManager) {
-      this.popupManager = popupManager;
+    constructor(popupManager2) {
+      this.popupManager = popupManager2;
       this.highlightOverlay = new HighlightOverlay();
       this.enabled = true;
       this.textSegmenter = new TextSegmenter();
@@ -1112,39 +1113,52 @@
   };
 
   // content.js
+  var popupManager;
+  var wordTracker;
+  var dataLoaded = false;
+  async function ensureInitialized() {
+    if (dataLoaded) return;
+    console.log("Loading dictionary data...");
+    await initializeData();
+    dataLoaded = true;
+    console.log("Dictionary data loaded");
+  }
   async function init() {
     try {
       const settingsManager = new SettingsManager();
       await settingsManager.load();
-      await initializeData();
       registerHandlebarsHelpers();
-      const popupManager = new PopupManager(settingsManager);
+      popupManager = new PopupManager(settingsManager);
       await popupManager.init();
-      const wordTracker = new WordTracker(popupManager);
-      const audioPlayer = new AudioPlayer();
-      chrome.runtime.sendMessage({ action: "getSaolaState" }, (response) => {
+      wordTracker = new WordTracker(popupManager);
+      audioPlayer = new AudioPlayer();
+      chrome.runtime.sendMessage({ action: "getSaolaState" }, async (response) => {
         if (response && response.enabled === true) {
-          wordTracker.start();
-        }
-      });
-      chrome.runtime.onMessage.addListener((message) => {
-        if (message.action === "enableSaola") {
-          if (message.enabled) {
+          if (response && response.enabled === true) {
+            await ensureInitialized();
             wordTracker.start();
-          } else {
-            wordTracker.stop();
           }
-        } else if (message.type === "play-audio") {
-          const audioElement = popupManager.popup.querySelector(`.audio-cell-${message.dialect}`);
-          audioPlayer.playAudio(message.word, message.dialect, audioElement);
-        } else if (message.type === "play-audio-sequence") {
-          const audioElement = popupManager.popup.querySelector(`.audio-cell-${message.dialect}`);
-          audioPlayer.playAudioSequence(message.word.split(" "), message.dialect, audioElement);
         }
       });
     } catch (error) {
       console.error("Extension initialization error:", error);
     }
   }
+  chrome.runtime.onMessage.addListener(async (message) => {
+    if (message.action === "enableSaola") {
+      if (message.enabled) {
+        await ensureInitialized();
+        wordTracker.start();
+      } else {
+        wordTracker.stop();
+      }
+    } else if (message.type === "play-saola-audio") {
+      const audioElement = popupManager.popup.querySelector(`.audio-cell-${message.dialect}`);
+      audioPlayer.playAudio(message.word, message.dialect, audioElement);
+    } else if (message.type === "play-saola-audio-sequence") {
+      const audioElement = popupManager.popup.querySelector(`.audio-cell-${message.dialect}`);
+      audioPlayer.playAudioSequence(message.word.split(" "), message.dialect, audioElement);
+    }
+  });
   init();
 })();
