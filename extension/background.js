@@ -1,3 +1,76 @@
+// background.js
+import { TextSegmenter } from './segmenter.js';
+
+const DATA_VERSION = 'v12';
+
+let dictionaryData = null;
+let segmenter = null;
+let loadingPromise = null;
+
+async function loadGzipJson(url) {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const ds = new DecompressionStream('gzip');
+    const decompressedStream = blob.stream().pipeThrough(ds);
+    const text = await new Response(decompressedStream).text();
+    return JSON.parse(text);
+}
+
+async function ensureDictionaryLoaded() {
+    if (dictionaryData) return;           // already loaded
+    if (loadingPromise) return loadingPromise;  // load in progress — don't double-load
+
+    loadingPromise = (async () => {
+    
+        console.log('Loading dictionary in background...');
+
+        const dataUrl = chrome.runtime.getURL(`data/vnen.json.gz?v=${DATA_VERSION}`);
+        const vnEn = await loadGzipJson(dataUrl);
+
+        // For segmentation: lowercase -> Set of {canonical, frequency, indices} objects
+        const lowercaseIndex = new Map();
+        
+        vnEn.forEach((entry, idx) => {
+            entry._idx = idx;
+
+            const terms = [entry.word, entry.alt_spelling].filter(Boolean);
+            for (const term of terms) {
+                // Lowercase index with canonical forms and frequencies
+                const lower = term.toLowerCase();
+                if (!lowercaseIndex.has(lower)) {
+                    lowercaseIndex.set(lower, []);
+                }
+
+                const canonicalForms = lowercaseIndex.get(lower);
+                
+                // The following two situations shouldn't happen, but just in case
+                if (canonicalForms.length > 2) {
+                    console.log('Too many canonical forms:', canonicalForms);
+                    continue;
+                }
+                let existing = canonicalForms.find(cf => cf.canonical === term);
+                if (existing) {
+                    console.log('Canonical form already exists:', existing);
+                    continue;
+                } 
+                
+                canonicalForms.push({
+                    canonical: term,
+                    freq: entry.freq || 0,
+                    index: idx
+                });
+            };
+
+        });
+
+        dictionaryData = { vnEn, lowercaseIndex };
+        segmenter = new TextSegmenter(dictionaryData);
+        console.log('Dictionary loaded in background');
+    })();
+
+    return loadingPromise;
+}
+
 let currentWord = null;
 let isMergedName = false;
 
@@ -41,6 +114,15 @@ async function deleteTabState(tabId) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    
+    if (message.action === 'saolaSegment') {
+        ensureDictionaryLoaded().then(() => {
+            const segments = segmenter.segment(message.text);  // ← full segmentation
+            const result = segmenter.findSegmentAtPosition(segments, message.offset);
+            sendResponse({ result, segments });  // ← return segments too for caching
+        });
+        return true;
+    }
     
     if (message.action === 'getSaolaState' && sender.tab) {
         // Check if tab still exists before responding

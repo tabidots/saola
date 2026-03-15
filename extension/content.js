@@ -1,4 +1,3 @@
-import { initializeData } from './data-loader.js';
 import { registerHandlebarsHelpers } from '../shared/templates.js';
 import { WordTracker } from './word-tracker.js';
 import { PopupManager } from './popup-manager.js';
@@ -8,20 +7,11 @@ import { AudioPlayer } from './audio-player.js';
 let settingsManager;
 let popupManager;
 let wordTracker;
-let dataLoaded = false;
-
-async function ensureInitialized() {
-    if (dataLoaded) return;
-
-    console.log('Loading dictionary data...');
-    await initializeData();
-    dataLoaded = true;
-    console.log('Dictionary data loaded');
-}
+let audioPlayer;
 
 async function init() {
     try {
-        const settingsManager = new SettingsManager();
+        settingsManager = new SettingsManager();
         await settingsManager.load();
 
         registerHandlebarsHelpers();
@@ -35,11 +25,8 @@ async function init() {
         
         // Ask background for this tab's state
         chrome.runtime.sendMessage({ action: 'getSaolaState' }, async (response) => {
-            if (response && response.enabled === true) {
-                if (response && response.enabled === true) {
-                    await ensureInitialized();
-                    wordTracker.start();
-                }
+            if (response?.enabled === true) {
+                wordTracker.start();
             }
         });
 
@@ -48,10 +35,9 @@ async function init() {
     }
 }
 
-chrome.runtime.onMessage.addListener(async (message) => {
+chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'enableSaola') {
         if (message.enabled) {
-            await ensureInitialized();
             wordTracker.start();
         } else {
             wordTracker.stop();

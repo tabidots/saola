@@ -1,5 +1,5 @@
+// word-tracker.js
 import { HighlightOverlay } from './highlighter.js';
-import { TextSegmenter } from './segmenter.js';
 
 export class WordTracker {
     constructor(popupManager) {
@@ -7,8 +7,7 @@ export class WordTracker {
         this.highlightOverlay = new HighlightOverlay();
         this.enabled = true;
 
-        this.textSegmenter = new TextSegmenter();
-        this.segmentCache = new WeakMap();
+        this.segmentCache = new Map();
 
         this.currentWordRange = null;
         this.currentWordText = '';
@@ -32,11 +31,20 @@ export class WordTracker {
         this.cleanup();
     }
 
-    isThrottled() {
-        const now = Date.now();
-        if (now - this.lastMouseMoveTime < 50) return true;
-        this.lastMouseMoveTime = now;
-        return false;
+    _findSegmentAtPosition(segments, offset) {
+        for (let i = 0; i < segments.length; i++) {
+            if (offset >= segments[i].start && offset < segments[i].end) {
+                return { segment: segments[i], index: i };
+            }
+        }
+        return null;
+    }
+
+    _cacheSegments(text, segments) {
+        if (this.segmentCache.size > 200) {
+            this.segmentCache.clear();
+        }
+        this.segmentCache.set(text, { segments, timestamp: Date.now() });
     }
 
     async handleMouseMove(e) {
@@ -58,26 +66,25 @@ export class WordTracker {
         const container = range.startContainer;
         const offset = range.startOffset;
         const text = container.data;
+        const cached = this.segmentCache.get(text);
 
-        // Get or create segmentation for this text node
-        let cached = this.segmentCache.get(container);
-        let segments;
+        let result;
 
-        // Check if cached text matches current text
-        // In cases like Google Maps review translations, the text can change
-        if (!cached || cached.text !== text) {
-            segments = this.textSegmenter.segment(text);
-            this.segmentCache.set(container, {
-                segments,
-                text: text, // Store the text too!
-                timestamp: Date.now()
-            });
+        if (cached) {
+            // Do position lookup locally without a round-trip
+            result = cached.segments ?
+                this._findSegmentAtPosition(cached.segments, offset) : null;
         } else {
-            segments = cached.segments;
+            const response = await chrome.runtime.sendMessage({
+                action: 'saolaSegment',
+                text,
+                offset
+            });
+            result = response?.result;
+            if (response?.segments) {
+                this._cacheSegments(text, response.segments);
+            }
         }
-
-        // Find which segment contains the cursor
-        const result = this.textSegmenter.findSegmentAtPosition(segments, offset);
 
         if (!result) {
             this.cleanup();
@@ -120,7 +127,7 @@ export class WordTracker {
 
         this.highlightOverlay.clearAll();
         this.highlightOverlay.highlightWord(container, segment.start, segment.end);
-        this.popupManager.show(segment, event.clientX, event.clientY);
+        this.popupManager.show(segment, e.clientX, e.clientY);
     }
 
     handleMouseLeave() {

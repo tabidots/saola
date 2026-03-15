@@ -1,51 +1,7 @@
 (() => {
   // ../shared/utils.js
-  var toneCorrections = {
-    "\xF3a": "o\xE1",
-    "\xF2a": "o\xE0",
-    "\u1ECFa": "o\u1EA3",
-    "\xF5a": "o\xE3",
-    "\u1ECDa": "o\u1EA1",
-    "\xF3e": "o\xE9",
-    "\xF2e": "o\xE8",
-    "\u1ECFe": "o\u1EBB",
-    "\xF5e": "o\u1EBD",
-    "\u1ECDe": "o\u1EB9",
-    "\xFAy": "u\xFD",
-    "\xF9y": "u\u1EF3",
-    "\u1EE7y": "u\u1EF7",
-    "\u0169y": "u\u1EF9",
-    "\u1EE5y": "u\u1EF5",
-    "\xD3a": "O\xE1",
-    "\xD2a": "O\xE0",
-    "\u1ECEa": "O\u1EA3",
-    "\xD5a": "O\xE3",
-    "\u1ECCa": "O\u1EA1",
-    "\xD3e": "O\xE9",
-    "\xD2e": "O\xE8",
-    "\u1ECEe": "O\u1EBB",
-    "\xD5e": "O\u1EBD",
-    "\u1ECCe": "O\u1EB9",
-    "\xDAy": "U\xFD",
-    "\xD9y": "U\u1EF3",
-    "\u1EE6y": "U\u1EF7",
-    "\u0168y": "U\u1EF9",
-    "\u1EE4y": "U\u1EF5"
-  };
-  function fixTonePlacement(text) {
-    const pattern = /([óòỏõọÓÒỎÕỌ][ae]|[úùủũụÚÙỦŨỤ]y)\b/g;
-    return text.replace(pattern, (match) => toneCorrections[match] || match);
-  }
   function escapeHtml(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-  }
-  async function loadGzipJson(url) {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const ds = new DecompressionStream("gzip");
-    const decompressedStream = blob.stream().pipeThrough(ds);
-    const text = await new Response(decompressedStream).text();
-    return JSON.parse(text);
   }
   if (!RegExp.escape) {
     RegExp.escape = function(s) {
@@ -109,51 +65,6 @@
       currentPos = tokenEnd;
     });
     return result;
-  }
-
-  // data-loader.js
-  var DATA_VERSION = "v12";
-  var data = {
-    vnEn: [],
-    lowercaseIndex: null
-  };
-  async function initializeData() {
-    const dataUrl = chrome.runtime.getURL(`data/vnen.json.gz?v=${DATA_VERSION}`);
-    data.vnEn = await loadGzipJson(dataUrl);
-    data.lowercaseIndex = /* @__PURE__ */ new Map();
-    data.vnEn.forEach((entry, idx) => {
-      entry._idx = idx;
-      const terms = [entry.word, entry.alt_spelling].filter(Boolean);
-      for (const term of terms) {
-        const lower = term.toLowerCase();
-        if (!data.lowercaseIndex.has(lower)) {
-          data.lowercaseIndex.set(lower, []);
-        }
-        const canonicalForms = data.lowercaseIndex.get(lower);
-        if (canonicalForms.length > 2) {
-          console.log("Too many canonical forms:", canonicalForms);
-          continue;
-        }
-        let existing = canonicalForms.find((cf) => cf.canonical === term);
-        if (existing) {
-          console.log("Canonical form already exists:", existing);
-          continue;
-        }
-        canonicalForms.push({
-          canonical: term,
-          freq: entry.freq || 0,
-          index: idx
-        });
-      }
-      ;
-    });
-  }
-  function getData() {
-    return data;
-    return {
-      vnEn: data.vnEn,
-      lowercaseIndex: data.lowercaseIndex
-    };
   }
 
   // ../shared/templates.js
@@ -278,366 +189,13 @@
     }
   };
 
-  // segmenter.js
-  var NAME_COLLISIONS = /* @__PURE__ */ new Set([
-    "An Phong",
-    "An Nam",
-    "An Huy",
-    "B\xECnh Ph\u01B0\u1EDBc",
-    "B\xECnh \u0110\u1ECBnh",
-    "B\xECnh \u0110\xF4ng",
-    "Ch\xE2u H\u1EA3i",
-    "C\u1EA7n Th\u01A1",
-    "C\u1EA9m L\u1EC7",
-    "C\u1EA9m Xuy\xEAn",
-    "Gia Ngh\u0129a",
-    "Gia \u0110\u1ECBnh",
-    "Hoa K\u1EF3",
-    "Hoa \u0110\xF4ng",
-    "Ho\xE0 H\u1EA3o",
-    "Ho\xE0 B\xECnh",
-    "Hu\u1EC7 Ch\xE2u",
-    "H\xE0 Nam",
-    "H\xE0 T\u0129nh",
-    "H\xE0 Ti\xEAn",
-    "H\u01B0\u01A1ng S\u01A1n",
-    "H\u1EA3i An",
-    "H\u1EA3i Nam",
-    "H\u1EA3i V\xE2n",
-    "H\u1EA3i Ch\xE2u",
-    "H\u1EB1ng Nga",
-    "Kh\u1EA3i Huy\u1EC1n",
-    "Ki\xEAn H\u1EA3i",
-    "Long An",
-    "L\xFD S\u01A1n",
-    "L\u0129nh Nam",
-    "Nam K\u1EF3",
-    "Nam H\xE0",
-    "Nam \u0110\u1ECBnh",
-    "Nam Phi",
-    "Ng\xE2n H\xE0",
-    "Ng\u1ECDc L\xE2n",
-    "Ng\u1ECDc Linh",
-    "Ph\u01B0\u1EDBc S\u01A1n",
-    "Qu\xFD Ch\xE2u",
-    "Qu\u1EA3ng Ch\xE2u",
-    "Qu\u1EA3ng Nam",
-    "Qu\u1EA3ng T\xE2y",
-    "Qu\u1EA3ng \u0110\xF4ng",
-    "Qu\u1EA3ng B\xECnh",
-    "S\u01A1n \u0110\xF4ng",
-    "S\u01A1n Tr\xE0",
-    "S\u01A1n T\xE2y",
-    "Thanh H\u1EA3i",
-    "Thanh Long",
-    "Thi\xEAn Nga",
-    "Thi\xEAn S\u01A1n",
-    "Thi\xEAn Long",
-    "Thi\xEAn B\xECnh",
-    "Thi\xEAn H\u1EADu",
-    "Thi\xEAn C\u1EA7m",
-    "Thu\u1EF5 S\u0129",
-    "Th\xE1i B\xECnh",
-    "Th\xE1i S\u01A1n",
-    "Th\u01B0\u1EDDng Nga",
-    "Tr\xE0 Vinh",
-    "Tr\u01B0\u1EDDng S\u01A1n",
-    "Tr\u01B0\u1EDDng Th\xE0nh",
-    "T\xE2y \u0110\u1EE9c",
-    "T\xE2y An",
-    "T\xE2y Phi",
-    "T\xE2y S\u01A1n",
-    "Vinh S\u01A1n",
-    "V\xE2n Nam",
-    "Xu\xE2n Thu",
-    "\u0110\xE0i \u0110\xF4ng",
-    "\u0110\xE0i S\u01A1n",
-    "\u0110\xE0i Loan",
-    "\u0110\xE0i Nam",
-    "\u0110\xF4ng Du",
-    "\u0110\xF4ng \u0110\u1EE9c",
-    "\u0110\xF4ng Phi",
-    "\u0110\xF4ng S\u01A1n",
-    "\u0110\u1ED3ng Xu\xE2n"
-  ]);
-  function normalizeVietnamese(text) {
-    let normalized = text;
-    if (normalized.length > 1 && normalized === normalized.toUpperCase()) {
-      normalized = normalized.toLowerCase();
-    }
-    return fixTonePlacement(normalized);
-  }
-  function tokenizeWithPositions(text) {
-    const tokens = [];
-    const regex = /([\p{L}\p{M}\p{Nd}-]+)|(\S)/gu;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-      const isWord = match[1] !== void 0;
-      tokens.push({
-        text: match[0],
-        start: match.index,
-        end: match.index + match[0].length,
-        isWord
-      });
-    }
-    return tokens;
-  }
-  function hasCapital(text) {
-    return text !== text.toLowerCase();
-  }
-  var TextSegmenter = class {
-    /**
-     * Segment text to minimize number of segments (prefer longer phrases)
-     * Use aggregate frequency as tiebreaker
-     */
-    constructor() {
-      this.freqCache = /* @__PURE__ */ new Map();
-      this.maxSegmentLength = 7;
-      this.audioCache = /* @__PURE__ */ new Map();
-    }
-    getBestMatchingHeadword(rawText) {
-      if (this.freqCache.has(rawText)) {
-        return this.freqCache.get(rawText);
-      }
-      const { lowercaseIndex } = getData();
-      const lowercaseRaw = rawText.toLowerCase();
-      const canonicalForms = lowercaseIndex.get(lowercaseRaw);
-      let result = {
-        found: false,
-        canonical: null,
-        frequency: 0,
-        primaryMatch: null,
-        secondaryMatch: null
-      };
-      if (!canonicalForms || canonicalForms.length === 0) {
-        this.freqCache.set(rawText, result);
-        return result;
-      }
-      const lowercaseForm = canonicalForms.find((cf) => !hasCapital(cf.canonical));
-      const capitalForm = canonicalForms.find((cf) => hasCapital(cf.canonical));
-      if (hasCapital(rawText) && capitalForm) {
-        result = {
-          found: true,
-          canonical: capitalForm.canonical,
-          frequency: capitalForm.freq,
-          primaryMatch: capitalForm.index,
-          secondaryMatch: lowercaseForm?.index
-        };
-      } else {
-        const bestForm = lowercaseForm || capitalForm || canonicalForms[0];
-        const otherForm = canonicalForms.length > 1 ? canonicalForms.find(
-          (cf) => cf.index !== bestForm.index
-        ) : null;
-        result = {
-          found: true,
-          canonical: bestForm.canonical,
-          frequency: bestForm.freq,
-          primaryMatch: bestForm.index,
-          secondaryMatch: otherForm?.index
-        };
-      }
-      this.freqCache.set(rawText, result);
-      return result;
-    }
-    segment(text) {
-      const { vnEn } = getData();
-      const allTokens = tokenizeWithPositions(text);
-      const wordTokens = allTokens.filter((t) => t.isWord);
-      const n = wordTokens.length;
-      if (n === 0) return [];
-      const best = new Array(n + 1).fill(null);
-      const backtrack = new Array(n + 1).fill(null);
-      best[0] = { segmentCount: 0, totalFreq: 0 };
-      for (let i = 0; i < n; i++) {
-        if (!best[i]) continue;
-        for (let len = 1; len <= Math.min(this.maxSegmentLength, n - i); len++) {
-          const phraseTokens = wordTokens.slice(i, i + len);
-          const startPos = phraseTokens[0].start;
-          const endPos = phraseTokens[phraseTokens.length - 1].end;
-          const rawText = normalizeVietnamese(text.substring(startPos, endPos));
-          let { found, frequency, canonical, primaryMatch, secondaryMatch } = this.getBestMatchingHeadword(rawText);
-          if (!found && rawText.includes("-")) {
-            ({ found, frequency, canonical, primaryMatch, secondaryMatch } = this.getBestMatchingHeadword(rawText.replace(/-/g, " ")));
-          }
-          if (!found && len > 1) continue;
-          const newSegmentCount = best[i].segmentCount + 1;
-          const newTotalFreq = best[i].totalFreq + frequency;
-          const shouldUpdate = !best[i + len] || newSegmentCount < best[i + len].segmentCount || newSegmentCount === best[i + len].segmentCount && newTotalFreq > best[i + len].totalFreq;
-          if (shouldUpdate) {
-            best[i + len] = {
-              segmentCount: newSegmentCount,
-              totalFreq: newTotalFreq
-            };
-            backtrack[i + len] = {
-              prevIndex: i,
-              phraseLength: len,
-              frequency,
-              found,
-              startPos,
-              endPos,
-              canonical,
-              primaryMatch,
-              secondaryMatch
-            };
-          }
-        }
-      }
-      if (!best[n]) {
-        console.warn("No valid segmentation found for:", text.substring(0, 50));
-        return wordTokens.map((token) => ({
-          text: token.text,
-          normalized: normalizeVietnamese(token.text),
-          start: token.start,
-          end: token.end,
-          wordCount: 1,
-          frequency: 0,
-          isUnknown: true
-        }));
-      }
-      const segments = [];
-      let idx = n;
-      while (idx > 0) {
-        const bt = backtrack[idx];
-        if (!bt) {
-          console.error("Backtrack failed at position", idx);
-          break;
-        }
-        const rawText = normalizeVietnamese(text.substring(bt.startPos, bt.endPos));
-        const primaryEntry = bt.primaryMatch ? vnEn[bt.primaryMatch] : null;
-        const isNameComponent = bt.phraseLength === 1 && hasCapital(rawText) && primaryEntry?.lexemes.some((lexeme) => {
-          return lexeme.pos === "proper noun" && (lexeme.senses.find((s) => s.gloss.includes("given name")) || lexeme.senses.find((s) => s.gloss.includes("surname")) || lexeme.senses.find((s) => s.gloss.includes("name")));
-        });
-        const secondaryEntry = bt.secondaryMatch ? vnEn[bt.secondaryMatch] : null;
-        segments.unshift({
-          text: rawText,
-          canonical: bt.canonical,
-          start: bt.startPos,
-          end: bt.endPos,
-          wordCount: bt.phraseLength,
-          hasAudio: primaryEntry?.has_audio,
-          frequency: bt.frequency,
-          isUnknown: !bt.found,
-          isNameComponent,
-          entries: [primaryEntry, secondaryEntry].filter(Boolean)
-        });
-        idx = bt.prevIndex;
-      }
-      return this.mergeNameSegments(segments);
-    }
-    findSegmentAtPosition(segments, cursorPos) {
-      for (let i = 0; i < segments.length; i++) {
-        const seg = segments[i];
-        if (cursorPos >= seg.start && cursorPos < seg.end) {
-          return { segment: seg, index: i };
-        }
-      }
-      return null;
-    }
-    mergeNameSegments(segments) {
-      const isNameComponent = (curSegment, prevSegment = null) => {
-        if (curSegment.isNameComponent) return true;
-        if (!prevSegment) return false;
-        if (prevSegment.entries?.[0]?.lexemes.some(
-          (lexeme) => lexeme.senses.some(
-            (s) => s.gloss.includes("surname")
-          ) && NAME_COLLISIONS.has(curSegment.canonical)
-        )) {
-          return true;
-        }
-        return false;
-      };
-      const result = [];
-      let i = 0;
-      while (i < segments.length) {
-        const nameComponents = [];
-        while (i < segments.length && nameComponents.length < 4) {
-          const prevSegment = i > 0 ? segments[i - 1] : null;
-          if (isNameComponent(segments[i], prevSegment)) {
-            nameComponents.push(segments[i]);
-            i++;
-          } else {
-            break;
-          }
-        }
-        if (nameComponents.length >= 2) {
-          result.push(this.createNameSegment(nameComponents));
-        } else if (nameComponents.length === 1) {
-          result.push(nameComponents[0]);
-        } else if (i < segments.length) {
-          result.push(segments[i]);
-          i++;
-        }
-      }
-      return result;
-    }
-    nameHasAudio(segments) {
-      const { vnEn } = getData();
-      for (const seg of segments) {
-        const components = seg.canonical.split(" ");
-        for (const comp of components) {
-          if (this.audioCache.has(comp)) {
-            if (!this.audioCache.get(comp)) return false;
-            continue;
-          }
-          const { primaryMatch } = this.getBestMatchingHeadword(comp);
-          const entry = primaryMatch ? vnEn[primaryMatch] : null;
-          const hasAudio = entry?.has_audio ?? false;
-          this.audioCache.set(comp, hasAudio);
-          if (!hasAudio) return false;
-        }
-      }
-      return true;
-    }
-    createNameSegment(segments) {
-      const first = segments[0];
-      const last = segments[segments.length - 1];
-      const canonical = segments.map((s) => s.canonical).join(" ");
-      const trimIPAAlts = (str) => {
-        const parts = str.split(" ~ ");
-        return parts[0];
-      };
-      return {
-        text: segments.map((s) => s.text).join(" "),
-        canonical,
-        start: first.start,
-        end: last.end,
-        wordCount: segments.length,
-        frequency: 0,
-        // doesn't matter
-        hasAudio: segments.every((s) => s.hasAudio) || this.nameHasAudio(segments),
-        isMergedName: true,
-        // necessary for handling audio playback
-        entries: [
-          {
-            word: canonical,
-            ipa_hn: segments.map((s) => trimIPAAlts(s.entries[0]?.ipa_hn || "")).join(" "),
-            ipa_sg: segments.map((s) => trimIPAAlts(s.entries[0]?.ipa_sg || "")).join(" "),
-            phonetic_hn: segments.map((s) => trimIPAAlts(s.entries[0]?.phonetic_hn || "")).join(" "),
-            phonetic_sg: segments.map((s) => trimIPAAlts(s.entries[0]?.phonetic_sg || "")).join(" "),
-            lexemes: [
-              {
-                pos: "name",
-                senses: [
-                  {
-                    gloss: "personal name"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      };
-    }
-  };
-
   // word-tracker.js
   var WordTracker = class {
     constructor(popupManager2) {
       this.popupManager = popupManager2;
       this.highlightOverlay = new HighlightOverlay();
       this.enabled = true;
-      this.textSegmenter = new TextSegmenter();
-      this.segmentCache = /* @__PURE__ */ new WeakMap();
+      this.segmentCache = /* @__PURE__ */ new Map();
       this.currentWordRange = null;
       this.currentWordText = "";
       this.lastMouseEvent = null;
@@ -656,11 +214,19 @@
       this.enabled = false;
       this.cleanup();
     }
-    isThrottled() {
-      const now = Date.now();
-      if (now - this.lastMouseMoveTime < 50) return true;
-      this.lastMouseMoveTime = now;
-      return false;
+    _findSegmentAtPosition(segments, offset) {
+      for (let i = 0; i < segments.length; i++) {
+        if (offset >= segments[i].start && offset < segments[i].end) {
+          return { segment: segments[i], index: i };
+        }
+      }
+      return null;
+    }
+    _cacheSegments(text, segments) {
+      if (this.segmentCache.size > 200) {
+        this.segmentCache.clear();
+      }
+      this.segmentCache.set(text, { segments, timestamp: Date.now() });
     }
     async handleMouseMove(e) {
       if (!this.enabled) return;
@@ -677,20 +243,21 @@
       const container = range.startContainer;
       const offset = range.startOffset;
       const text = container.data;
-      let cached = this.segmentCache.get(container);
-      let segments;
-      if (!cached || cached.text !== text) {
-        segments = this.textSegmenter.segment(text);
-        this.segmentCache.set(container, {
-          segments,
-          text,
-          // Store the text too!
-          timestamp: Date.now()
-        });
+      const cached = this.segmentCache.get(text);
+      let result;
+      if (cached) {
+        result = cached.segments ? this._findSegmentAtPosition(cached.segments, offset) : null;
       } else {
-        segments = cached.segments;
+        const response = await chrome.runtime.sendMessage({
+          action: "saolaSegment",
+          text,
+          offset
+        });
+        result = response?.result;
+        if (response?.segments) {
+          this._cacheSegments(text, response.segments);
+        }
       }
-      const result = this.textSegmenter.findSegmentAtPosition(segments, offset);
       if (!result) {
         this.cleanup();
         return;
@@ -721,7 +288,7 @@
       }
       this.highlightOverlay.clearAll();
       this.highlightOverlay.highlightWord(container, segment.start, segment.end);
-      this.popupManager.show(segment, event.clientX, event.clientY);
+      this.popupManager.show(segment, e.clientX, e.clientY);
     }
     handleMouseLeave() {
       this.cleanup();
@@ -731,7 +298,7 @@
       this.highlightOverlay.clearAll();
       this.popupManager.hide();
     }
-    updateCurrentWord(container, segment, event2) {
+    updateCurrentWord(container, segment, event) {
       this.currentWordRange = {
         container,
         start: segment.start,
@@ -756,8 +323,8 @@
 
   // popup-manager.js
   var PopupManager = class {
-    constructor(settingsManager) {
-      this.settingsManager = settingsManager;
+    constructor(settingsManager2) {
+      this.settingsManager = settingsManager2;
       this.margin = 10;
       this.popup = null;
       this.shortcuts = {
@@ -1113,19 +680,13 @@
   };
 
   // content.js
+  var settingsManager;
   var popupManager;
   var wordTracker;
-  var dataLoaded = false;
-  async function ensureInitialized() {
-    if (dataLoaded) return;
-    console.log("Loading dictionary data...");
-    await initializeData();
-    dataLoaded = true;
-    console.log("Dictionary data loaded");
-  }
+  var audioPlayer;
   async function init() {
     try {
-      const settingsManager = new SettingsManager();
+      settingsManager = new SettingsManager();
       await settingsManager.load();
       registerHandlebarsHelpers();
       popupManager = new PopupManager(settingsManager);
@@ -1133,21 +694,17 @@
       wordTracker = new WordTracker(popupManager);
       audioPlayer = new AudioPlayer();
       chrome.runtime.sendMessage({ action: "getSaolaState" }, async (response) => {
-        if (response && response.enabled === true) {
-          if (response && response.enabled === true) {
-            await ensureInitialized();
-            wordTracker.start();
-          }
+        if (response?.enabled === true) {
+          wordTracker.start();
         }
       });
     } catch (error) {
       console.error("Extension initialization error:", error);
     }
   }
-  chrome.runtime.onMessage.addListener(async (message) => {
+  chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "enableSaola") {
       if (message.enabled) {
-        await ensureInitialized();
         wordTracker.start();
       } else {
         wordTracker.stop();

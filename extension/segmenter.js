@@ -1,6 +1,4 @@
-import { getData } from './data-loader.js';
-import { fixTonePlacement } from '../shared/utils.js';
-
+// segmenter.js
 const NAME_COLLISIONS = new Set([
     'An Phong', 'An Nam', 'An Huy', 'Bình Phước', 'Bình Định', 'Bình Đông',
     'Châu Hải', 'Cần Thơ', 'Cẩm Lệ', 'Cẩm Xuyên', 'Gia Nghĩa', 'Gia Định',
@@ -18,6 +16,20 @@ const NAME_COLLISIONS = new Set([
     'Đài Loan', 'Đài Nam', 'Đông Du', 'Đông Đức', 'Đông Phi', 'Đông Sơn',
     'Đồng Xuân'
 ]);
+
+const toneCorrections = {
+    'óa': 'oá', 'òa': 'oà', 'ỏa': 'oả', 'õa': 'oã', 'ọa': 'oạ',
+    'óe': 'oé', 'òe': 'oè', 'ỏe': 'oẻ', 'õe': 'oẽ', 'ọe': 'oẹ',
+    'úy': 'uý', 'ùy': 'uỳ', 'ủy': 'uỷ', 'ũy': 'uỹ', 'ụy': 'uỵ',
+    'Óa': 'Oá', 'Òa': 'Oà', 'Ỏa': 'Oả', 'Õa': 'Oã', 'Ọa': 'Oạ',
+    'Óe': 'Oé', 'Òe': 'Oè', 'Ỏe': 'Oẻ', 'Õe': 'Oẽ', 'Ọe': 'Oẹ',
+    'Úy': 'Uý', 'Ùy': 'Uỳ', 'Ủy': 'Uỷ', 'Ũy': 'Uỹ', 'Ụy': 'Uỵ'
+};
+
+function fixTonePlacement(text) {
+    const pattern = /([óòỏõọÓÒỎÕỌ][ae]|[úùủũụÚÙỦŨỤ]y)\b/g;
+    return text.replace(pattern, match => toneCorrections[match] || match);
+}
 
 function normalizeVietnamese(text) {
     let normalized = text;
@@ -55,10 +67,11 @@ export class TextSegmenter {
      * Segment text to minimize number of segments (prefer longer phrases)
      * Use aggregate frequency as tiebreaker
      */
-    constructor() {
-        this.freqCache = new Map();  // normalizedPhrase -> {found, frequency, variation}
-        this.maxSegmentLength = 7;   // originally 5
-        this.audioCache = new Map(); // comp -> boolean, for names
+    constructor(dictionaryData) {          // ← accept data
+        this.dictionaryData = dictionaryData;
+        this.freqCache = new Map();
+        this.maxSegmentLength = 7;
+        this.audioCache = new Map();
     }
 
     getBestMatchingHeadword(rawText) {
@@ -66,7 +79,7 @@ export class TextSegmenter {
             return this.freqCache.get(rawText);
         }
 
-        const { lowercaseIndex } = getData();
+        const { lowercaseIndex } = this.dictionaryData;
         const lowercaseRaw = rawText.toLowerCase();
         const canonicalForms = lowercaseIndex.get(lowercaseRaw);
 
@@ -118,7 +131,7 @@ export class TextSegmenter {
     }
 
     segment(text) {
-        const { vnEn } = getData();
+        const { vnEn } = this.dictionaryData;
         const allTokens = tokenizeWithPositions(text);
         const wordTokens = allTokens.filter(t => t.isWord);
 
@@ -300,7 +313,7 @@ export class TextSegmenter {
     }
 
     nameHasAudio(segments) {
-        const { vnEn } = getData();
+        const { vnEn } = this.dictionaryData;
 
         for (const seg of segments) {
             const components = seg.canonical.split(' ');
